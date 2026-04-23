@@ -58,3 +58,18 @@ export {
   DEFAULT_ROTATE_AFTER_TIME_MS,
   KEY_RETENTION_MS,
 } from './symmetric';
+
+// Layer 4: Asymmetric Secured Messages
+export {
+  encryptAsymmetric,
+  decryptAsymmetricRecipient,
+  decryptAsymmetricSelf,
+  encryptSecuredMessage,
+  decryptSecuredMessageRecipient,
+  decryptSecuredMessageSelf,
+} from './asymmetric';
+
+export type {
+  SecuredMessageResult,
+  DecryptedSecuredMessage,
+} from './asymmetric';
