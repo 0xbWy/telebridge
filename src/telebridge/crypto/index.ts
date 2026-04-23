@@ -35,3 +35,26 @@ export type {
   VerifiedPrekeyBundle,
   KeyExchangeWithBundleResult,
 } from './keyExchange';
+
+// Layer 3: Symmetric Encryption
+export {
+  encryptSymmetric,
+  decryptSymmetric,
+  ratchetChainKey,
+  deriveMessageKeyAtCounter,
+  generateChatKey,
+  keyIdFromKey,
+  keyIdToBytes,
+  RatchetState,
+  shouldRotateKey,
+  encryptFile,
+  decryptFile,
+  hkdfSha256,
+  KEY_LENGTH,
+  NONCE_LENGTH,
+  TAG_LENGTH,
+  KEY_ID_LENGTH,
+  DEFAULT_ROTATE_AFTER_MESSAGES,
+  DEFAULT_ROTATE_AFTER_TIME_MS,
+  KEY_RETENTION_MS,
+} from './symmetric';
