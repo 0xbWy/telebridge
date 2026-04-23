@@ -5,29 +5,27 @@
  * VAL-CRYPTO-024: Encrypted key blob is tamper-evident (AEAD)
  * VAL-CRYPTO-025: unlockBridge decrypts keys before use (V1 Bug #2 guard)
  */
-import {
-  unlockBridge,
-  lockBridge,
-  createEncryptedKeyStore,
-  changeBridgePassword,
-  verifyBridgePassword,
-  getBridgeState,
-  isBridgeUnlocked,
-  getUnlockedIdentity,
-  getUnlockedX25519,
-} from '../src/telebridge/crypto/persistence';
-
 import type { EncryptedKeyStore } from '../src/telebridge/crypto/persistence';
 
 import {
-  generateIdentityKeypair,
   deriveX25519FromEd25519,
+  generateIdentityKeypair,
 } from '../src/telebridge/crypto/identity';
-
 import {
-  encryptKeyBlob,
   decryptKeyBlob,
+  encryptKeyBlob,
 } from '../src/telebridge/crypto/password';
+import {
+  changeBridgePassword,
+  createEncryptedKeyStore,
+  getBridgeState,
+  getUnlockedIdentity,
+  getUnlockedX25519,
+  isBridgeUnlocked,
+  lockBridge,
+  unlockBridge,
+  verifyBridgePassword,
+} from '../src/telebridge/crypto/persistence';
 
 // ---------- Setup / Cleanup ----------
 

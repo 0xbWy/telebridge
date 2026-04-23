@@ -17,17 +17,15 @@
  *   5. Keys exist in memory ONLY while bridge is unlocked
  */
 
+import type { IdentityKeypair } from './identity';
+
+import { deriveX25519FromEd25519 } from './identity';
 import {
+  decryptKeyBlob,
   deriveKeyFromPassword,
   encryptKeyBlob,
-  decryptKeyBlob,
   importAesKey,
 } from './password';
-
-import type { IdentityKeypair } from './identity';
-import { deriveX25519FromEd25519 } from './identity';
-import { hkdf } from '@noble/hashes/hkdf.js';
-import { sha256 } from '@noble/hashes/sha2.js';
 
 // ---------- Types ----------
 
@@ -56,9 +54,9 @@ export interface EncryptedKeyStore {
   readonly verifierNonce: string;
   /** Argon2id parameters used. */
   readonly params: {
-    readonly m: number;  // memory (KiB)
-    readonly t: number;  // time iterations
-    readonly l: number;  // parallelism
+    readonly m: number; // memory (KiB)
+    readonly t: number; // time iterations
+    readonly l: number; // parallelism
     readonly argon2: boolean; // whether Argon2id was used
   };
   /** Ed25519 verifying bytes (public key) — stored in plaintext for lookup. */
@@ -80,7 +78,7 @@ export interface UnlockResult {
 // ---------- HKDF info strings for key store ----------
 
 /** HKDF info for deriving the key-encryption key from the bridge password. */
-const KEY_ENCRYPTION_KEY_INFO = new TextEncoder().encode('TeleBridge-KeyEncryption-v1');
+const _KEY_ENCRYPTION_KEY_INFO = new TextEncoder().encode('TeleBridge-KeyEncryption-v1');
 
 // ---------- Module State ----------
 
@@ -216,7 +214,7 @@ export async function unlockBridge(
     // Step 5: Store decrypted keys in memory
     const identity: UnlockedIdentity = {
       ed25519: ed25519Keypair,
-      x25519: x25519,
+      x25519,
     };
 
     unlockedIdentity = identity;

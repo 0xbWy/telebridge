@@ -13,9 +13,8 @@
  *   Time: 3 iterations
  *   Parallelism: 1
  */
+// eslint-disable-next-line import-x/default
 import argon2 from 'argon2-browser';
-import { hkdf } from '@noble/hashes/hkdf.js';
-import { sha256 } from '@noble/hashes/sha2.js';
 
 // ---------- Argon2id Constants (VAL-CRYPTO-015) ----------
 
@@ -191,7 +190,7 @@ async function deriveKeyPBKDF2(
   const derivedKey = await crypto.subtle.deriveKey(
     {
       name: 'PBKDF2',
-      salt,
+      salt: salt as BufferSource,
       iterations: PBKDF2_ITERATIONS,
       hash: 'SHA-256',
     },

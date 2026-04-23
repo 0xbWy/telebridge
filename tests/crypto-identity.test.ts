@@ -7,16 +7,16 @@
  * VAL-CRYPTO-040: Ed25519 sign/verify round-trip
  * VAL-CRYPTO-041: X25519 ECDH with RFC 7748 test vectors
  */
+import { x25519 } from '@noble/curves/ed25519.js';
+
 import {
+  computeSharedSecret,
+  deriveX25519FromEd25519,
   generateIdentityKeypair,
   generateIdentityKeypairFromSeed,
-  deriveX25519FromEd25519,
   signBytes,
   verifySignature,
-  computeSharedSecret,
 } from '../src/telebridge/crypto/identity';
-
-import { ed25519, x25519 } from '@noble/curves/ed25519.js';
 
 // ---------- Helpers ----------
 

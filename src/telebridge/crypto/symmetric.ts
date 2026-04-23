@@ -339,7 +339,7 @@ export class RatchetState {
   /** Highest received and processed counter. */
   private receiveCounter: number;
   /** Cached message keys for out-of-order decryption. */
-  private messageKeyCache: Map<number, Uint8Array> = new Map();
+  private messageKeyCache = new Map<number, Uint8Array>();
   /** When this key was established (timestamp). */
   private establishedAt: number;
   /** Message count threshold for rotation. */

@@ -5,20 +5,18 @@
  * VAL-CRYPTO-021: Wire format decoding round-trips; rejects bad inputs
  * VAL-CRYPTO-022: Protocol messages fit within Telegram's 4096-char limit
  */
+import type { ProtocolMode } from '../src/telebridge/crypto/protocol';
+
 import {
+  calculateEncodedLength,
+  decodeProtocol,
   encodeProtocol,
   encodeProtocolText,
-  decodeProtocol,
   isProtocolMessage,
-  calculateEncodedLength,
-  willFitInTelegram,
   PROTOCOL_VERSION,
-  PROTOCOL_PREFIX,
   TELEGRAM_MAX_MESSAGE_LENGTH,
-  MAX_PLAINTEXT_BYTES,
+  willFitInTelegram,
 } from '../src/telebridge/crypto/protocol';
-
-import type { ProtocolMode } from '../src/telebridge/crypto/protocol';
 
 // ---------- Helpers ----------
 

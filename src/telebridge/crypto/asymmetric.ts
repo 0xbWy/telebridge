@@ -16,10 +16,10 @@ import { x25519 } from '@noble/curves/ed25519.js';
 import { hkdf } from '@noble/hashes/hkdf.js';
 import { sha256 } from '@noble/hashes/sha2.js';
 
-import { encryptSymmetric, decryptSymmetric } from './symmetric';
-import { signBytes, verifySignature, deriveX25519FromEd25519 } from './identity';
-
 import type { IdentityKeypair, X25519Keypair } from './identity';
+
+import { deriveX25519FromEd25519, signBytes, verifySignature } from './identity';
+import { decryptSymmetric, encryptSymmetric } from './symmetric';
 
 // ---------- Constants ----------
 
@@ -193,11 +193,11 @@ export async function encryptAsymmetric(
 
     // Build recipient payload: [ephPub (32B)][nonce (12B)][ciphertext (var)][authTag (16B)][signature (64B)]
     const forRecipient = concat(
-      ephPub,               // 32B
-      recipientNonce,       // 12B
-      recipientCiphertext,   // var
-      recipientAuthTag,     // 16B
-      signature,            // 64B
+      ephPub, // 32B
+      recipientNonce, // 12B
+      recipientCiphertext, // var
+      recipientAuthTag, // 16B
+      signature, // 64B
     );
 
     // ---- Encrypt-to-self ----
@@ -213,11 +213,11 @@ export async function encryptAsymmetric(
 
     // Build self-copy payload: [ephPub (32B)][nonce (12B)][ciphertext (var)][authTag (16B)][signature (64B)]
     const forSelf = concat(
-      ephPub,            // 32B
-      selfNonce,         // 12B
-      selfCiphertext,    // var
-      selfAuthTag,       // 16B
-      signature,         // 64B
+      ephPub, // 32B
+      selfNonce, // 12B
+      selfCiphertext, // var
+      selfAuthTag, // 16B
+      signature, // 64B
     );
 
     return {
@@ -265,9 +265,9 @@ export async function decryptAsymmetricRecipient(
   }
 
   // Parse payload
-  const ephemeralPubKey = payload.slice(0, KEY_LENGTH);       // 32B
+  const ephemeralPubKey = payload.slice(0, KEY_LENGTH); // 32B
   const nonce = payload.slice(KEY_LENGTH, KEY_LENGTH + NONCE_LENGTH); // 12B
-  const signature = payload.slice(payload.length - SIGNATURE_LENGTH);  // 64B
+  const signature = payload.slice(payload.length - SIGNATURE_LENGTH); // 64B
   const ciphertextEnd = payload.length - SIGNATURE_LENGTH - TAG_LENGTH;
   const ciphertext = payload.slice(KEY_LENGTH + NONCE_LENGTH, ciphertextEnd);
 

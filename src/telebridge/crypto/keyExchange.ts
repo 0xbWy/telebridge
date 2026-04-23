@@ -7,29 +7,29 @@ import { x25519 } from '@noble/curves/ed25519.js';
 import { hkdf } from '@noble/hashes/hkdf.js';
 import { sha256 } from '@noble/hashes/sha2.js';
 
+import type { IdentityKeypair, X25519Keypair } from './identity';
+
 import {
   deriveX25519FromEd25519,
   signBytes,
   verifySignature,
 } from './identity';
 
-import type { IdentityKeypair, X25519Keypair } from './identity';
-
 // ---------- Constants ----------
 
 const KEY_LENGTH = 32;
-const SIGNATURE_LENGTH = 64;
+const _SIGNATURE_LENGTH = 64;
 
 /** HKDF info string for per-chat key derivation. */
 const CHAT_KEY_INFO = new TextEncoder().encode('TeleBridge-ChatKey-v1');
 
 /** HKDF info string for signed prekey sub-key derivation. */
-const SIGNED_PREKEY_INFO = new TextEncoder().encode('TeleBridge-SignedPreKey-v1');
+const _SIGNED_PREKEY_INFO = new TextEncoder().encode('TeleBridge-SignedPreKey-v1');
 
 // ---------- Low-order point protection ----------
 
 /** All-zero 32-byte constant for comparison. */
-const ZERO_32 = new Uint8Array(KEY_LENGTH);
+const _ZERO_32 = new Uint8Array(KEY_LENGTH);
 
 /**
  * Check if a DH output is all-zeros (indicating a low-order point attack).
@@ -265,7 +265,9 @@ export function verifyPrekeyBundle(
   let oneTimePrekeyPub: Uint8Array | undefined;
   if (bundle.oneTimePrekeys.length > 0) {
     if (oneTimePrekeyIndex >= bundle.oneTimePrekeys.length) {
-      throw new Error(`One-time prekey index ${oneTimePrekeyIndex} out of range (have ${bundle.oneTimePrekeys.length})`);
+      throw new Error(
+        `One-time prekey index ${oneTimePrekeyIndex} out of range (have ${bundle.oneTimePrekeys.length})`,
+      );
     }
     oneTimePrekeyPub = bundle.oneTimePrekeys[oneTimePrekeyIndex].point;
   }

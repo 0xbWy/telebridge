@@ -5,17 +5,17 @@
  * VAL-CRYPTO-029: Media key lookup by explicit chatId (not selectCurrentChat)
  * VAL-CRYPTO-030: Large files encrypted in chunks with per-chunk auth tags
  */
-import {
-  encryptMedia,
-  decryptMedia,
-  shouldChunk,
-  calculateChunkCount,
-  ALL_MEDIA_TYPES,
-  CHUNK_SIZE,
-  MAX_SINGLE_PIECE_SIZE,
-} from '../src/telebridge/crypto/media';
-
 import type { MediaType } from '../src/telebridge/crypto/media';
+
+import {
+  ALL_MEDIA_TYPES,
+  calculateChunkCount,
+  CHUNK_SIZE,
+  decryptMedia,
+  encryptMedia,
+  MAX_SINGLE_PIECE_SIZE,
+  shouldChunk,
+} from '../src/telebridge/crypto/media';
 
 // ---------- Helpers ----------
 

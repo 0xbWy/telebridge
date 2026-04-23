@@ -9,31 +9,29 @@
  * VAL-CRYPTO-036: One-time prekeys consumed after use
  * VAL-CRYPTO-041: X25519 ECDH with RFC 7748 test vectors (commutativity)
  */
-import {
-  generateIdentityKeypair,
-  deriveX25519FromEd25519,
-  signBytes,
-  verifySignature,
-  computeSharedSecret,
-} from '../src/telebridge/crypto/identity';
-
-import {
-  deriveChatKey,
-  performECDH,
-  generateSignedPrekey,
-  generateOneTimePrekey,
-  generatePrekeyBundle,
-  verifyPrekeyBundle,
-  initiateKeyExchange,
-  completeKeyExchange,
-  OneTimePrekeyStore,
-} from '../src/telebridge/crypto/keyExchange';
-
-import type { SignedPrekey, PrekeyBundle } from '../src/telebridge/crypto/keyExchange';
-
 import { x25519 } from '@noble/curves/ed25519.js';
 import { hkdf } from '@noble/hashes/hkdf.js';
 import { sha256 } from '@noble/hashes/sha2.js';
+
+import type { PrekeyBundle } from '../src/telebridge/crypto/keyExchange';
+
+import {
+  computeSharedSecret,
+  deriveX25519FromEd25519,
+  generateIdentityKeypair,
+  verifySignature,
+} from '../src/telebridge/crypto/identity';
+import {
+  completeKeyExchange,
+  deriveChatKey,
+  generateOneTimePrekey,
+  generatePrekeyBundle,
+  generateSignedPrekey,
+  initiateKeyExchange,
+  OneTimePrekeyStore,
+  performECDH,
+  verifyPrekeyBundle,
+} from '../src/telebridge/crypto/keyExchange';
 
 // ---------- Helpers ----------
 

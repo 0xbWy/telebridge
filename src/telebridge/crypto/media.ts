@@ -16,17 +16,15 @@
  */
 
 import {
-  encryptSymmetric,
+  deriveMediaKey,
+} from './keyDerivation';
+import {
   decryptSymmetric,
+  encryptSymmetric,
   KEY_LENGTH,
   NONCE_LENGTH,
   TAG_LENGTH,
 } from './symmetric';
-
-import {
-  deriveMediaKey,
-  deriveFileKey,
-} from './keyDerivation';
 
 // ---------- Constants ----------
 
@@ -379,7 +377,7 @@ function serializeChunkedResult(result: ChunkedEncryptionResult): Uint8Array {
   let offset = 0;
 
   // Header
-  output[offset] = FILE_VERSION_CHUNKED;  // version 0x02 for chunked
+  output[offset] = FILE_VERSION_CHUNKED; // version 0x02 for chunked
   offset += 1;
 
   output[offset] = (result.totalChunks >> 8) & 0xFF;

@@ -4,23 +4,22 @@
  * VAL-CRYPTO-026: Consistent key derivation path for text and binary (V1 Bug #3 guard)
  * VAL-CRYPTO-027: HKDF-SHA256 used for all derivation, not bare SHA-256
  */
+
 import {
-  deriveKey,
-  deriveChatKey as deriveChatKeyFromDerivation,
-  deriveRatchetMessageKey,
-  deriveNextChainKey,
-  deriveMediaKey,
-  deriveFileKey,
-  deriveSecuredMessageKey,
-  deriveSecuredSelfKey,
   deriveBIP39Key,
+  deriveChatKey as deriveChatKeyFromDerivation,
+  deriveFileKey,
+  deriveKey,
   deriveKeyEncryptionKey,
   deriveKeyFromText,
-  verifyConsistentDerivation,
+  deriveMediaKey,
+  deriveNextChainKey,
+  deriveRatchetMessageKey,
+  deriveSecuredMessageKey,
+  deriveSecuredSelfKey,
   INFO_STRINGS,
+  verifyConsistentDerivation,
 } from '../src/telebridge/crypto/keyDerivation';
-
-import { sha256 } from '@noble/hashes/sha2.js';
 
 // ---------- VAL-CRYPTO-026: Consistent key derivation path ----------
 

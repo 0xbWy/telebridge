@@ -4,6 +4,7 @@ declare const process: NodeJS.Process;
 
 declare module '*.css';
 declare module '*.scss';
+declare module 'argon2-browser';
 
 declare const APP_VERSION: string;
 declare const APP_REVISION: string;

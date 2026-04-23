@@ -11,9 +11,9 @@
  * - Known BIP39 test vectors are validated
  * - Password is never stored in global state
  */
-import * as BIP39 from 'bip39';
 import { hkdf } from '@noble/hashes/hkdf.js';
 import { sha256 } from '@noble/hashes/sha2.js';
+import * as BIP39 from 'bip39';
 
 // ---------- Constants ----------
 
@@ -127,7 +127,7 @@ export function mnemonicToKey(
  *
  * @returns true if Argon2id is available
  */
-export async function isBIP39Available(): Promise<boolean> {
+export function isBIP39Available(): boolean {
   try {
     const mnemonic = generateMnemonic();
     return validateMnemonic(mnemonic);

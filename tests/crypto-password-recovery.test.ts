@@ -11,30 +11,29 @@
  * VAL-CRYPTO-045: BIP39 mnemonic-to-seed matches reference test vectors
  */
 import {
-  deriveKeyFromPassword,
-  generateSalt,
-  isArgon2Available,
-  verifyPassword,
-  createPasswordVerifier,
-  encryptPrivateKey,
-  decryptPrivateKey,
-  encryptKeyBlob,
-  decryptKeyBlob,
-  importAesKey,
-  ARGON2_MEMORY,
-  ARGON2_TIME,
-  ARGON2_PARALLELISM,
-  ARGON2_HASH_LENGTH,
-  SALT_LENGTH,
-} from '../src/telebridge/crypto/password';
-
-import {
   generateMnemonic,
-  validateMnemonic,
-  mnemonicToSeed,
-  mnemonicToKey,
   MNEMONIC_WORD_COUNT,
+  mnemonicToKey,
+  mnemonicToSeed,
+  validateMnemonic,
 } from '../src/telebridge/crypto/bip39';
+import {
+  ARGON2_HASH_LENGTH,
+  ARGON2_MEMORY,
+  ARGON2_PARALLELISM,
+  ARGON2_TIME,
+  createPasswordVerifier,
+  decryptKeyBlob,
+  decryptPrivateKey,
+  deriveKeyFromPassword,
+  encryptKeyBlob,
+  encryptPrivateKey,
+  generateSalt,
+  importAesKey,
+  isArgon2Available,
+  SALT_LENGTH,
+  verifyPassword,
+} from '../src/telebridge/crypto/password';
 
 // Argon2id password hashing is slow — increase the Jest timeout
 // for this test file to accommodate multiple KDF operations

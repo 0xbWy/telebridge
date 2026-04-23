@@ -16,25 +16,23 @@
  * VAL-CRYPTO-043: HKDF-SHA256 with RFC 5869 test vectors
  */
 import {
-  encryptSymmetric,
+  decryptFile,
   decryptSymmetric,
-  ratchetChainKey,
+  DEFAULT_ROTATE_AFTER_TIME_MS,
   deriveMessageKeyAtCounter,
+  encryptFile,
+  encryptSymmetric,
   generateChatKey,
+  hkdfSha256,
+  KEY_ID_LENGTH,
+  KEY_LENGTH,
   keyIdFromKey,
   keyIdToBytes,
+  NONCE_LENGTH,
+  ratchetChainKey,
   RatchetState,
   shouldRotateKey,
-  encryptFile,
-  decryptFile,
-  hkdfSha256,
-  KEY_LENGTH,
-  NONCE_LENGTH,
   TAG_LENGTH,
-  KEY_ID_LENGTH,
-  DEFAULT_ROTATE_AFTER_MESSAGES,
-  DEFAULT_ROTATE_AFTER_TIME_MS,
-  KEY_RETENTION_MS,
 } from '../src/telebridge/crypto/symmetric';
 
 // ---------- Helpers ----------

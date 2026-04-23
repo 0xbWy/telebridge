@@ -11,22 +11,20 @@
  * - Ed25519 signature verification in secured messages
  * - Tamper resistance (modified ciphertext, wrong key, etc.)
  */
+import type { IdentityKeypair, X25519Keypair } from '../src/telebridge/crypto/identity';
+
 import {
-  generateIdentityKeypair,
-  deriveX25519FromEd25519,
-  signBytes,
-  verifySignature,
-} from '../src/telebridge/crypto/identity';
-import {
-  encryptAsymmetric,
   decryptAsymmetricRecipient,
   decryptAsymmetricSelf,
-  encryptSecuredMessage,
   decryptSecuredMessageRecipient,
   decryptSecuredMessageSelf,
+  encryptAsymmetric,
+  encryptSecuredMessage,
 } from '../src/telebridge/crypto/asymmetric';
-
-import type { X25519Keypair, IdentityKeypair } from '../src/telebridge/crypto/identity';
+import {
+  deriveX25519FromEd25519,
+  generateIdentityKeypair,
+} from '../src/telebridge/crypto/identity';
 
 // ---------- Helpers ----------
 
