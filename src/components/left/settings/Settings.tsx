@@ -39,8 +39,8 @@ import SettingsPrivacyVisibility from './SettingsPrivacyVisibility';
 import SettingsPrivacyVisibilityExceptionList from './SettingsPrivacyVisibilityExceptionList';
 import SettingsQuickReaction from './SettingsQuickReaction';
 import SettingsStickers from './SettingsStickers';
-import SettingsTwoFa from './twoFa/SettingsTwoFa';
 import SettingsTelebridge from './SettingsTelebridge';
+import SettingsTwoFa from './twoFa/SettingsTwoFa';
 
 import './Settings.scss';
 

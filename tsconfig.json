@@ -29,7 +29,8 @@
     },
     "types": [
       "dom-chromium-ai",
-      "dom-view-transitions"
+      "dom-view-transitions",
+      "jest"
     ],
     "incremental": true,
     "tsBuildInfoFile": ".cache/.tsconfig.tsbuildinfo"
