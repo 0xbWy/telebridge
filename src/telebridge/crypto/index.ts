@@ -104,3 +104,69 @@ export {
   isBIP39Available,
   MNEMONIC_WORD_COUNT,
 } from './bip39';
+
+// Protocol Wire Format
+export {
+  encodeProtocol,
+  encodeProtocolText,
+  decodeProtocol,
+  isProtocolMessage,
+  calculateEncodedLength,
+  willFitInTelegram,
+  PROTOCOL_VERSION,
+  PROTOCOL_PREFIX,
+  TELEGRAM_MAX_MESSAGE_LENGTH,
+  MAX_PLAINTEXT_BYTES,
+} from './protocol';
+
+export type { ProtocolMode, ProtocolMessage } from './protocol';
+
+// Key Persistence (encrypted blobs, unlock/lock bridge)
+export {
+  unlockBridge,
+  lockBridge,
+  createEncryptedKeyStore,
+  changeBridgePassword,
+  verifyBridgePassword,
+  getBridgeState,
+  isBridgeUnlocked,
+  getUnlockedIdentity,
+  getUnlockedX25519,
+} from './persistence';
+
+export type {
+  BridgeState,
+  UnlockedIdentity,
+  EncryptedKeyStore,
+  UnlockResult,
+} from './persistence';
+
+// Consistent Key Derivation (HKDF-SHA256 only, single path)
+export {
+  deriveKey,
+  deriveChatKey as deriveChatKeyFromDerivation,
+  deriveRatchetMessageKey,
+  deriveNextChainKey,
+  deriveMediaKey,
+  deriveFileKey,
+  deriveSecuredMessageKey,
+  deriveSecuredSelfKey,
+  deriveBIP39Key,
+  deriveKeyEncryptionKey,
+  deriveKeyFromText,
+  verifyConsistentDerivation,
+  INFO_STRINGS,
+} from './keyDerivation';
+
+// Media Encryption (ALL media types, no skip paths, explicit chatId)
+export {
+  encryptMedia,
+  decryptMedia,
+  shouldChunk,
+  calculateChunkCount,
+  ALL_MEDIA_TYPES,
+  CHUNK_SIZE,
+  MAX_SINGLE_PIECE_SIZE,
+} from './media';
+
+export type { MediaType, ChunkData, ChunkedEncryptionResult } from './media';

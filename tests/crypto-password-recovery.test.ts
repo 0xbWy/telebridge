@@ -36,6 +36,10 @@ import {
   MNEMONIC_WORD_COUNT,
 } from '../src/telebridge/crypto/bip39';
 
+// Argon2id password hashing is slow — increase the Jest timeout
+// for this test file to accommodate multiple KDF operations
+jest.setTimeout(60000);
+
 // ---------- Helpers ----------
 
 function bytesToHex(bytes: Uint8Array): string {
