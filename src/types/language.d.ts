@@ -2100,6 +2100,15 @@ export interface LangPair {
   'AiMessageEditorFrom': undefined;
   'AiMessageEditorTo': undefined;
   'ButtonHelp': undefined;
+  'TeleBridgeSettingsTitle': undefined;
+  'TeleBridgeSettingsSubtitle': undefined;
+  'TeleBridgeSettingsIdentity': undefined;
+  'TeleBridgeSettingsPassword': undefined;
+  'TeleBridgeSettingsContacts': undefined;
+  'TeleBridgeSettingsChats': undefined;
+  'TeleBridgeSettingsSecurity': undefined;
+  'TeleBridgeSettingsAbout': undefined;
+  'TeleBridgeSettingsMenuLink': undefined;
 }
 
 export interface LangPairWithVariables<V = LangVariable> {

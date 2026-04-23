@@ -1,0 +1,17 @@
+.heading {
+  padding: 1rem 1.25rem 0.5rem;
+}
+
+.headingTitle {
+  font-size: 1.25rem;
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+  margin: 0 0 0.25rem;
+}
+
+.headingSubtitle {
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
+  margin: 0;
+  line-height: 1.35;
+}

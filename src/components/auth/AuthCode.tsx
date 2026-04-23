@@ -96,6 +96,14 @@ const AuthCode = ({
           trackingDirection={trackingDirection}
         />
         <h1>
+          <span
+            className="telebridge-glitch-title"
+            data-text={lang('AuthTitle')}
+          >
+            {lang('AuthTitle')}
+          </span>
+        </h1>
+        <div className="auth-phone-number">
           {phoneNumber}
           <div
             className="auth-number-edit div-button"
@@ -107,7 +115,7 @@ const AuthCode = ({
           >
             <Icon name="edit" />
           </div>
-        </h1>
+        </div>
         <p className="note">
           {lang(isCodeViaApp ? 'SentAppCode' : 'LoginJustSentSms', undefined, {
             withNodes: true,

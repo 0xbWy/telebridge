@@ -98,6 +98,13 @@ const SettingsMain: FC<OwnProps & StateProps> = ({
       </div>
       <div className="settings-main-menu">
         <ListItem
+          icon="lock"
+          narrow
+          onClick={() => openSettingsScreen({ screen: SettingsScreens.TeleBridge })}
+        >
+          {lang('TeleBridgeSettingsMenuLink')}
+        </ListItem>
+        <ListItem
           icon="settings"
           narrow
 

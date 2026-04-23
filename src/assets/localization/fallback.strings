@@ -2867,3 +2867,12 @@
 "TranslationToneNeutral" = "Neutral";
 "ButtonHelp" = "Help";
 "UnofficialSecurityRisk" = "{peer} uses an unofficial Telegram client — messages to this user may be less secure.";
+"TeleBridgeSettingsTitle" = "TeleBridge";
+"TeleBridgeSettingsSubtitle" = "End-to-end encryption settings for TeleBridge";
+"TeleBridgeSettingsIdentity" = "Identity";
+"TeleBridgeSettingsPassword" = "Password";
+"TeleBridgeSettingsContacts" = "Contacts";
+"TeleBridgeSettingsChats" = "Chats";
+"TeleBridgeSettingsSecurity" = "Security";
+"TeleBridgeSettingsAbout" = "About";
+"TeleBridgeSettingsMenuLink" = "TeleBridge";

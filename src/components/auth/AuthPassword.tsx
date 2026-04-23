@@ -35,7 +35,14 @@ const AuthPassword = ({
     <div id="auth-password-form" className="custom-scroll">
       <div className="auth-form">
         <MonkeyPassword isPasswordVisible={showPassword} />
-        <h1>{lang('LoginHeaderPassword')}</h1>
+        <h1>
+          <span
+            className="telebridge-glitch-title"
+            data-text={lang('AuthTitle')}
+          >
+            {lang('AuthTitle')}
+          </span>
+        </h1>
         <p className="note">{lang('LoginEnterPasswordDescription')}</p>
         <PasswordForm
           onClearError={clearAuthErrorKey}
