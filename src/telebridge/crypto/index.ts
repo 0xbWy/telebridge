@@ -73,3 +73,34 @@ export type {
   SecuredMessageResult,
   DecryptedSecuredMessage,
 } from './asymmetric';
+
+// Password & Key Encryption (Argon2id)
+export {
+  deriveKeyFromPassword,
+  generateSalt,
+  isArgon2Available,
+  verifyPassword,
+  createPasswordVerifier,
+  encryptPrivateKey,
+  decryptPrivateKey,
+  encryptKeyBlob,
+  decryptKeyBlob,
+  importAesKey,
+  ARGON2_MEMORY,
+  ARGON2_TIME,
+  ARGON2_PARALLELISM,
+  ARGON2_HASH_LENGTH,
+  SALT_LENGTH,
+} from './password';
+
+export type { PasswordHashResult } from './password';
+
+// BIP39 Mnemonic Recovery
+export {
+  generateMnemonic,
+  validateMnemonic,
+  mnemonicToSeed,
+  mnemonicToKey,
+  isBIP39Available,
+  MNEMONIC_WORD_COUNT,
+} from './bip39';

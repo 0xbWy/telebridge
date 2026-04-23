@@ -27,7 +27,7 @@ export default {
     '\\.txt$': '@glen/jest-raw-loader',
   },
   transformIgnorePatterns: [
-    'node_modules/(?!(@noble/curves|@noble/hashes|@noble/ed25519)/)',
+    'node_modules/(?!(@noble/curves|@noble/hashes|@noble/ed25519|argon2-browser|bip39)/)',
   ],
   globals: {
     APP_REVISION: 'jest-test',
