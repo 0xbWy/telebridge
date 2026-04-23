@@ -144,6 +144,7 @@ export const DEFAULT_APP_CONFIG: ApiAppConfig = {
   bandwidthPremiumNotifyPeriod: 3600,
   bandwidthPremiumUploadSpeedup: 10,
   urlAuthDomains: [
+    'telebridge.online',
     'web.telegram.org',
     'web.t.me',
     'k.t.me',
@@ -151,6 +152,7 @@ export const DEFAULT_APP_CONFIG: ApiAppConfig = {
     'a.t.me',
   ],
   whitelistedDomains: [
+    'telebridge.online',
     'telegram.dog',
     'telegram.me',
     'telegram.org',

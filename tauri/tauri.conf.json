@@ -14,7 +14,7 @@
   "plugins": {
     "deep-link": {
       "desktop": {
-        "schemes": ["tg"]
+        "schemes": ["telebridge"]
       }
     }
   },
@@ -22,7 +22,7 @@
     "active": true,
     "createUpdaterArtifacts": false,
     "category": "SocialNetworking",
-    "copyright": "Telegram Air",
+    "copyright": "TeleBridge",
     "externalBin": [],
     "icon": [
       "icons/32x32.png",
@@ -53,6 +53,6 @@
       }
     }
   },
-  "identifier": "org.telegram.TelegramAirBeta",
-  "productName": "Telegram Air"
+  "identifier": "online.telebridge.app",
+  "productName": "TeleBridge"
 }

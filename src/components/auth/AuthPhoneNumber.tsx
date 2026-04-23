@@ -254,7 +254,14 @@ const AuthPhoneNumber = ({
       )}
       <div className="auth-form">
         <div id="logo" />
-        <h1>{lang('AuthTitle')}</h1>
+        <h1>
+          <span
+            className="telebridge-glitch-title"
+            data-text={lang('AuthTitle')}
+          >
+            {lang('AuthTitle')}
+          </span>
+        </h1>
         <p className="note">{lang('StartText')}</p>
         <form className="form" action="" onSubmit={handleSubmit}>
           <CountryCodeInput
