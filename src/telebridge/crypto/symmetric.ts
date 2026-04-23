@@ -79,7 +79,7 @@ function encodeCounterBE(counter: number): Uint8Array {
 async function importAesKey(keyBytes: Uint8Array): Promise<CryptoKey> {
   return crypto.subtle.importKey(
     'raw',
-    keyBytes,
+    keyBytes as BufferSource,
     { name: 'AES-GCM' },
     false,
     ['encrypt', 'decrypt'],
@@ -119,15 +119,15 @@ export async function encryptSymmetric(
 
   const algorithm: AesGcmParams = {
     name: 'AES-GCM',
-    iv: nonce,
+    iv: nonce as BufferSource,
     tagLength: TAG_LENGTH * 8, // 128 bits — MANDATORY
   };
 
   if (aad) {
-    algorithm.additionalData = aad;
+    algorithm.additionalData = aad as BufferSource;
   }
 
-  const encrypted = await crypto.subtle.encrypt(algorithm, cryptoKey, plaintext);
+  const encrypted = await crypto.subtle.encrypt(algorithm, cryptoKey, plaintext as BufferSource);
   // Web Crypto returns ciphertext || authTag concatenated
   const encryptedArray = new Uint8Array(encrypted);
   const ciphertext = encryptedArray.slice(0, encryptedArray.length - TAG_LENGTH);
@@ -179,12 +179,12 @@ export async function decryptSymmetric(
 
   const algorithm: AesGcmParams = {
     name: 'AES-GCM',
-    iv: nonce,
+    iv: nonce as BufferSource,
     tagLength: TAG_LENGTH * 8, // 128 bits
   };
 
   if (aad) {
-    algorithm.additionalData = aad;
+    algorithm.additionalData = aad as BufferSource;
   }
 
   // This ALWAYS verifies the auth tag (GCM finalization).

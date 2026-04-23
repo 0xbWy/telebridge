@@ -700,16 +700,16 @@ describe('VAL-CRYPTO-042: AES-256-GCM NIST test vector', () => {
     // Encrypt with known key and nonce
     const cryptoKey = await crypto.subtle.importKey(
       'raw',
-      key,
+      key as BufferSource,
       { name: 'AES-GCM' },
       false,
       ['encrypt'],
     );
 
     const encrypted = await crypto.subtle.encrypt(
-      { name: 'AES-GCM', iv: nonce, tagLength: 128 },
+      { name: 'AES-GCM', iv: nonce as BufferSource, tagLength: 128 },
       cryptoKey,
-      plaintext,
+      plaintext as BufferSource,
     );
 
     const encryptedArray = new Uint8Array(encrypted);
