@@ -1,9 +1,10 @@
 .lockIndicator {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
   cursor: default;
   user-select: none;
+
+  display: inline-flex;
+  gap: 0.25rem;
+  align-items: center;
 }
 
 .emoji {
@@ -13,6 +14,6 @@
 
 .label {
   font-size: 0.75rem;
-  color: var(--color-text-secondary);
   line-height: 1;
+  color: var(--color-text-secondary);
 }

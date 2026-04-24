@@ -5,36 +5,39 @@
 }
 
 .title {
+  margin: 0 0 0.5rem;
   font-size: 1.25rem;
   font-weight: var(--font-weight-semibold);
   color: var(--color-text);
-  margin: 0 0 0.5rem;
 }
 
 .description {
-  font-size: 0.875rem;
-  color: var(--color-text-secondary);
-  line-height: 1.5;
   margin-bottom: 1rem;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: var(--color-text-secondary);
 }
 
 .warning {
   display: flex;
-  align-items: flex-start;
   gap: 0.5rem;
+  align-items: flex-start;
+
+  margin-bottom: 1rem;
   padding: 0.75rem;
-  background: rgba(240, 62, 62, 0.1);
   border: 1px solid rgba(240, 62, 62, 0.3);
   border-radius: 0.5rem;
-  margin-bottom: 1rem;
+
   font-size: 0.8125rem;
-  color: var(--color-danger);
   line-height: 1.4;
+  color: var(--color-danger);
+
+  background: rgba(240, 62, 62, 0.1);
 }
 
 .warningIcon {
-  font-size: 1.25rem;
   flex-shrink: 0;
+  font-size: 1.25rem;
 }
 
 .wordGrid {
@@ -46,43 +49,52 @@
 
 .wordItem {
   display: flex;
-  align-items: center;
   gap: 0.5rem;
+  align-items: center;
+
   padding: 0.375rem 0.75rem;
-  background: var(--color-background);
   border: 1px solid var(--color-borders);
   border-radius: 0.375rem;
+
   font-size: 0.875rem;
   color: var(--color-text);
+
+  background: var(--color-background);
 }
 
 .wordNumber {
-  color: var(--color-text-secondary);
-  font-weight: var(--font-weight-medium);
   min-width: 1.75rem;
-  text-align: right;
+
+  font-weight: var(--font-weight-medium);
   font-variant-numeric: tabular-nums;
+  color: var(--color-text-secondary);
+  text-align: right;
 }
 
 .wordText {
   font-weight: var(--font-weight-semibold);
-  word-break: break-word;
+  overflow-wrap: break-word;
 }
 
 .copyButton {
+  cursor: pointer;
+
   display: flex;
+  gap: 0.5rem;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
+
   width: 100%;
   padding: 0.75rem;
-  font-size: 0.9375rem;
-  font-weight: var(--font-weight-semibold);
   border: none;
   border-radius: 0.5rem;
-  cursor: pointer;
-  background: var(--color-primary);
+
+  font-size: 0.9375rem;
+  font-weight: var(--font-weight-semibold);
   color: white;
+
+  background: var(--color-primary);
+
   transition: background-color 0.15s ease;
 
   &:hover {
@@ -96,13 +108,15 @@
 
 .copiedMessage {
   display: flex;
+  gap: 0.375rem;
   align-items: center;
   justify-content: center;
-  gap: 0.375rem;
+
+  margin-top: 0.5rem;
   padding: 0.5rem;
+
   font-size: 0.875rem;
   color: var(--color-primary);
-  margin-top: 0.5rem;
 }
 
 .actions {
@@ -112,15 +126,20 @@
 }
 
 .nextButton {
+  cursor: pointer;
+
   flex: 1;
+
   padding: 0.75rem;
-  font-size: 1rem;
-  font-weight: var(--font-weight-semibold);
   border: none;
   border-radius: 0.5rem;
-  cursor: pointer;
-  background: var(--color-primary);
+
+  font-size: 1rem;
+  font-weight: var(--font-weight-semibold);
   color: white;
+
+  background: var(--color-primary);
+
   transition: background-color 0.15s ease;
 
   &:hover {
@@ -128,8 +147,8 @@
   }
 
   &:disabled {
-    background: var(--color-borders);
-    color: var(--color-text-secondary);
     cursor: not-allowed;
+    color: var(--color-text-secondary);
+    background: var(--color-borders);
   }
 }
