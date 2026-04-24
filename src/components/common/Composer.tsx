@@ -106,11 +106,11 @@ import {
   selectWebPage,
 } from '../../global/selectors';
 import { selectCurrentLimit } from '../../global/selectors/limits';
+import { selectSharedSettings } from '../../global/selectors/sharedState';
 import {
   selectChatEncryptionStatus,
   selectIsKeyExchangeInProgress,
 } from '../../global/selectors/telebridge';
-import { selectSharedSettings } from '../../global/selectors/sharedState';
 import {
   selectDraft,
   selectEditingDraft,
@@ -2255,9 +2255,15 @@ const Composer = ({
       }
       >
         {isInMessageList && isKeyExchangeInProgress && (
-          <div className="telebridge-key-exchange-banner" role="status" aria-label={lang('TeleBridgeComposerBlockedKeyExchange')}>
+          <div
+            className="telebridge-key-exchange-banner"
+            role="status"
+            aria-label={lang('TeleBridgeComposerBlockedKeyExchange')}
+          >
             <span className="telebridge-key-exchange-banner-icon" aria-hidden="true">🔐</span>
-            <span className="telebridge-key-exchange-banner-text">{lang('TeleBridgeComposerBlockedKeyExchange')}</span>
+            <span className="telebridge-key-exchange-banner-text">
+              {lang('TeleBridgeComposerBlockedKeyExchange')}
+            </span>
           </div>
         )}
         {!isNeedPremium && (
