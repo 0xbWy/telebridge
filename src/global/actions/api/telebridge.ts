@@ -7,7 +7,7 @@
  */
 
 import type { EncryptedKeyStore } from '../../../telebridge/crypto/persistence';
-import type { EncryptionStatus } from '../../../telebridge/state';
+import type { EncryptionStatus, KeyExchangeState } from '../../../telebridge/state';
 import type { ActionReturnType } from '../../types';
 
 import {
@@ -30,6 +30,7 @@ import {
   setBridgePasswordSet,
   setBridgeUnlocked,
   setBridgeUnlocking,
+  setChatEncryptionState,
   setChatEncryptionStatus as setChatEncryptionStatusReducer,
   setChatKeyExchangeState,
   setDefaultEncryptNewChats,
@@ -121,6 +122,11 @@ addActionHandler('telebridgeUnlock', async (global, actions, payload): Promise<v
 // ---------- Bridge Lock ----------
 
 addActionHandler('telebridgeLock', (global): ActionReturnType => {
+  // Clear in-memory chat keys when locking
+  // V1 Bug #5: no plaintext keys in memory when locked
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const integ = require('../../../telebridge/integration') as typeof import('../../../telebridge/integration');
+  integ.lockMessagePipeline();
   return setBridgeLocked(global);
 });
 
@@ -194,12 +200,27 @@ addActionHandler('telebridgeStartKeyExchange', (global, actions, payload): Actio
   global = setChatKeyExchangeState(global, chatId, 'inProgress');
   setGlobal(global);
 
-  // Simulate key exchange completion after a short delay
-  // In a real implementation, this would send a tb1.kx.<base64> message via Telegram
-  // and wait for the handshake response
+  // In a real implementation, this would:
+  // 1. Generate an ephemeral X25519 keypair
+  // 2. Send a tb1.kx.<base64> message containing our ephemeral public key
+  // 3. Wait for the other party's response
+  // 4. Derive the shared chat key via ECDH
+  //
+  // For now, generate a random chat key and mark the exchange as complete
+  // This allows the messaging pipeline to function for testing and development
   setTimeout(() => {
-    const currentGlobal = getGlobal();
-    global = setChatKeyExchangeState(currentGlobal, chatId, 'complete');
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const sym = require(
+      '../../../telebridge/crypto/symmetric',
+    ) as typeof import('../../../telebridge/crypto/symmetric');
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const msg = require('../../../telebridge/messages') as typeof import('../../../telebridge/messages');
+
+    const { key } = sym.generateChatKey();
+    msg.setChatKey(chatId, key);
+
+    global = getGlobal();
+    global = setChatKeyExchangeState(global, chatId, 'complete');
     setGlobal(global);
   }, 2000);
 
@@ -244,6 +265,64 @@ addActionHandler('telebridgeSetTofuAutoAccept', (global, actions, payload): Acti
 addActionHandler('telebridgeTofuAutoAccept', (global, actions, payload): ActionReturnType => {
   const { chatId, contactName } = payload;
   return setTofuAutoAccepted(global, chatId, contactName);
+});
+
+// ---------- Chat Key Management ----------
+
+addActionHandler('telebridgeEstablishChatKey', (global, actions, payload): ActionReturnType => {
+  const { chatId, keyBase64 } = payload;
+
+  // Store the key in the in-memory messages module
+  // Key lookup is always by explicit chatId (V1 Bug #4 guard)
+  const keyBytes = base64ToArray(keyBase64);
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const msgModule = require('../../../telebridge/messages') as typeof import('../../../telebridge/messages');
+  msgModule.setChatKey(chatId, keyBytes);
+
+  // Update the chat encryption state to reflect the new key
+  global = setChatEncryptionState(global, chatId, (chatState) => ({
+    ...chatState,
+    status: 'encrypted' as EncryptionStatus,
+    keyExchangeState: 'complete' as KeyExchangeState,
+    showStartEncryptedBanner: false,
+    lastKeyExchangeAt: Date.now(),
+    messageCount: 0,
+  }));
+
+  return global;
+});
+
+addActionHandler('telebridgeIncrementMessageCount', (global, actions, payload): ActionReturnType => {
+  const { chatId } = payload;
+
+  return setChatEncryptionState(global, chatId, (chatState) => ({
+    ...chatState,
+    messageCount: (chatState.messageCount ?? 0) + 1,
+  }));
+});
+
+addActionHandler('telebridgeRotateChatKey', (global, actions, payload): ActionReturnType => {
+  const { chatId } = payload;
+
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const integration = require('../../../telebridge/integration') as typeof import('../../../telebridge/integration');
+
+  const rotation = integration.checkKeyRotation(chatId);
+  if (rotation) {
+    // Key was rotated — send a kx message to the other party
+    // TODO: Send key exchange message via Telegram
+    // For now, update the state to reflect the rotation
+    global = getGlobal();
+    global = setChatEncryptionState(global, chatId, (chatState) => ({
+      ...chatState,
+      messageCount: 0,
+      lastKeyExchangeAt: Date.now(),
+    }));
+    setGlobal(global);
+    return global;
+  }
+
+  return global;
 });
 
 // ---------- Helper: IndexedDB ----------
@@ -305,4 +384,13 @@ function arrayToBase64(arr: Uint8Array): string {
     binary += String.fromCharCode(arr[i]);
   }
   return btoa(binary);
+}
+
+function base64ToArray(base64: string): Uint8Array {
+  const binary = atob(base64);
+  const arr = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) {
+    arr[i] = binary.charCodeAt(i);
+  }
+  return arr;
 }
