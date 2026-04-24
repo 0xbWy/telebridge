@@ -11,9 +11,6 @@ import type { EncryptionStatus } from '../../../telebridge/state';
 import type { ActionReturnType } from '../../types';
 
 import {
-  generateMnemonic,
-} from '../../../telebridge/crypto/bip39';
-import {
   deriveX25519FromEd25519,
   generateIdentityKeypair,
 } from '../../../telebridge/crypto/identity';
@@ -72,10 +69,8 @@ addActionHandler('telebridgeSetPassword', async (global, actions, payload): Prom
     );
     setGlobal(global);
 
-    // 5. Store mnemonic temporarily for recovery phrase display
-    const mnemonic = generateMnemonic();
-    window.sessionStorage.setItem('telebridge_mnemonic', mnemonic);
-    window.sessionStorage.setItem('telebridge_recovery_shown', 'false');
+    // Mnemonic is passed directly from the component to avoid async race
+    // conditions. It is NOT stored in sessionStorage (fixes race bug).
   } catch {
     global = setBridgeError(global, 'TeleBridgeWrongPassword');
     setGlobal(global);
@@ -152,6 +147,37 @@ addActionHandler('telebridgeInitIdentity', (global): ActionReturnType => {
 
 addActionHandler('telebridgeClearError', (global): ActionReturnType => {
   return setBridgeError(global, '');
+});
+
+// ---------- Startup: Probe IndexedDB for Existing Keystore ----------
+
+addActionHandler('telebridgeInitStartup', async (global): Promise<void> => {
+  // On app start, probe IndexedDB to check if a keystore already exists.
+  // This restores hasPassword state when the cache is loaded from IndexedDB,
+  // so the user doesn't see the password setup flow again after reload.
+  // Skip probing if cache already has hasPassword set (from reduceGlobal persistence).
+  if (global.telebridge?.hasPassword) {
+    return;
+  }
+
+  try {
+    const db = await openBridgeDb();
+    const keyStore = await dbGet(db, 'keystore', 'default') as EncryptedKeyStore | undefined;
+
+    if (keyStore) {
+      // Keystore exists — user has previously set a password.
+      // Restore hasPassword and public key identity from the stored keystore.
+      global = getGlobal(); // Re-read in case state changed during async
+      global = setBridgePasswordSet(global);
+      global = setBridgeIdentity(global, keyStore.ed25519PubBase64, keyStore.x25519PubBase64);
+      // Bridge stays locked until user enters password
+      global = setBridgeLocked(global);
+      setGlobal(global);
+    }
+  } catch {
+    // If IndexedDB probe fails, leave state as-is (hasPassword: false).
+    // User will see the setup flow, which is safer than assuming no password.
+  }
 });
 
 // ---------- Set Recovery Verified ----------

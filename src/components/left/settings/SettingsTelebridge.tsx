@@ -13,6 +13,9 @@ import {
   selectTeleBridgeIdentity,
   selectTofuAutoAcceptEnabled,
 } from '../../../global/selectors/telebridge';
+import {
+  generateMnemonic,
+} from '../../../telebridge/crypto/bip39';
 
 import useHistoryBack from '../../../hooks/useHistoryBack';
 import useLang from '../../../hooks/useLang';
@@ -81,8 +84,12 @@ const SettingsTelebridge = ({
 
   const handleSetPassword = useLastCallback((password: string) => {
     setIsLoading(true);
+    // Generate mnemonic BEFORE dispatching the async action to avoid the race condition
+    // where sessionStorage is read before the async action writes to it.
+    // The mnemonic is passed directly to the component state, not via sessionStorage.
+    const generatedMnemonic = generateMnemonic();
+    setMnemonic(generatedMnemonic);
     telebridgeSetPassword({ password });
-    setMnemonic(sessionStorage.getItem('telebridge_mnemonic') ?? '');
     setSetupStep('recovery');
     setIsLoading(false);
   });

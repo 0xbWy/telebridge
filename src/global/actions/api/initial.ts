@@ -81,6 +81,9 @@ addActionHandler('initApi', (global, actions): ActionReturnType => {
   });
 
   void setShouldEnableDebugLog(Boolean(shouldCollectDebugLogs));
+
+  // Probe TeleBridge keystore to restore hasPassword state
+  actions.telebridgeInitStartup();
 });
 
 addActionHandler('setAuthPhoneNumber', (global, actions, payload): ActionReturnType => {

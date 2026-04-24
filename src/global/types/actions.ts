@@ -3192,6 +3192,7 @@ export interface ActionPayloads {
   telebridgeUnlock: { password: string };
   telebridgeLock: undefined;
   telebridgeInitIdentity: undefined;
+  telebridgeInitStartup: undefined;
   telebridgeClearError: undefined;
   telebridgeSetRecoveryVerified: { verified: boolean };
   telebridgeStartKeyExchange: { chatId: string };

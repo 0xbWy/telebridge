@@ -458,6 +458,7 @@ function reduceGlobal<T extends GlobalState>(global: T) {
       'savedReactionTags',
       'timezones',
       'availableEffectById',
+      'telebridge',
     ]),
     lastIsChatInfoShown: !getIsMobile() ? global.lastIsChatInfoShown : undefined,
     stickers: reduceStickers(global),
