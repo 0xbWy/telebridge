@@ -2990,3 +2990,7 @@
 "TeleBridgeKeyRotated" = "🔑 Encryption key refreshed";
 "TeleBridgeMessageTooLarge" = "Message too long for encryption";
 "TeleBridgeMessageTooLargeDescription" = "Encrypted messages are limited to approximately 2,900 characters. Try sending a shorter message.";
+"TeleBridgeEncryptFailed" = "Encryption failed";
+"TeleBridgeEncryptFailedDescription" = "Your message was not sent to protect your privacy. Please try again.";
+"TeleBridgeSendSecuredFailed" = "Secured send failed";
+"TeleBridgeSecuredBadge" = "🔐";

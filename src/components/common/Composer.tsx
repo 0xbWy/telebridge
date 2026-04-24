@@ -1281,7 +1281,7 @@ const Composer = ({
   });
 
   const handleSendCore = useLastCallback(
-    (
+    async (
       currentAttachments: ApiAttachment[],
       isSilent = false,
       scheduledAt?: number,
@@ -1318,9 +1318,31 @@ const Composer = ({
 
         if (areEffectsSupported) saveEffectInDraft({ chatId, threadId, effectId: undefined });
 
+        // Prepare text for sending — may encrypt with TeleBridge if chat key exists
+        let finalText = text;
+        try {
+          // eslint-disable-next-line @typescript-eslint/no-require-imports
+          const integ = require('../../telebridge/integration') as typeof import('../../telebridge/integration');
+          if (integ.hasChatKey(chatId)) {
+            const result = await integ.processOutgoingMessage(text, chatId);
+            if (result.wasEncrypted) {
+              finalText = result.text;
+            }
+          }
+        } catch (encError) {
+          // V1 Bug #2 guard: If encryption fails, do NOT send plaintext
+          // eslint-disable-next-line no-console
+          console.error('[TeleBridge] Encryption failed, aborting send:', encError);
+          showNotification({
+            localId: 'telebridgeEncryptFailed',
+            message: lang('TeleBridgeEncryptFailed'),
+          });
+          return;
+        }
+
         sendMessage({
           messageList: currentMessageList,
-          text,
+          text: finalText,
           entities,
           scheduledAt,
           scheduleRepeatPeriod,
@@ -2060,7 +2082,7 @@ const Composer = ({
     });
   });
 
-  const handleSendSecured = useLastCallback(() => {
+  const handleSendSecured = useLastCallback(async () => {
     // Check if key exchange is in progress or no encryption key is established
     if (isKeyExchangeInProgress) {
       showNotification({
@@ -2078,9 +2100,54 @@ const Composer = ({
       return;
     }
 
-    // TODO: Implement Layer 4 secured message send (tb1.a.<base64>)
-    // This will be implemented in the messaging pipeline feature
-    handleActionWithPaymentConfirmation(sendSilent);
+    // Layer 4 secured message: encrypt with recipient's X25519 public key
+    // Produces two messages: one for recipient, one for sender (encrypt-to-self)
+    const { text: messageText } = parseHtmlAsFormattedText(getHtml());
+
+    if (!messageText) {
+      return;
+    }
+
+    if (!validateTextLength(messageText)) return;
+
+    try {
+      // Dynamic import to avoid bundling crypto in non-TeleBridge builds
+      const { processOutgoingSecuredMessage } = await import('../../telebridge/integration');
+
+      const result = await processOutgoingSecuredMessage(messageText, chatId);
+
+      // Send both messages: one for recipient, one for self (encrypt-to-self)
+      // The self-copy will be filtered by useTelebridgeDecryption
+      if (currentMessageList) {
+        // Send the recipient message
+        sendMessage({
+          messageList: currentMessageList,
+          text: result.forRecipient,
+          isSilent: isSilentPosting,
+        });
+
+        // Send the encrypt-to-self copy
+        sendMessage({
+          messageList: currentMessageList,
+          text: result.forSelf,
+          isSilent: isSilentPosting,
+        });
+      }
+
+      lastMessageSendTimeSecondsRef.current = getServerTime();
+      clearDraft({ chatId, threadId, isLocalOnly: true });
+
+      requestMeasure(() => {
+        resetComposer();
+      });
+    } catch (error) {
+      // eslint-disable-next-line no-console
+      console.error('[TeleBridge] Secured send failed:', error);
+      showNotification({
+        localId: 'telebridgeSendSecuredFailed',
+        message: lang('TeleBridgeSendSecuredFailed'),
+      });
+    }
   });
 
   const handleSendSilent = useLastCallback(() => {

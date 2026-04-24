@@ -2215,6 +2215,10 @@ export interface LangPair {
   'TeleBridgeKeyRotated': undefined;
   'TeleBridgeMessageTooLarge': undefined;
   'TeleBridgeMessageTooLargeDescription': undefined;
+  'TeleBridgeEncryptFailed': undefined;
+  'TeleBridgeEncryptFailedDescription': undefined;
+  'TeleBridgeSendSecuredFailed': undefined;
+  'TeleBridgeSecuredBadge': undefined;
 }
 
 export interface LangPairWithVariables<V = LangVariable> {
