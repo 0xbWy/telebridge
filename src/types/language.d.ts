@@ -2203,6 +2203,10 @@ export interface LangPair {
   'TeleBridgeAboutEncryption': undefined;
   'TeleBridgeAboutDescription': undefined;
   'TeleBridgeVersion': undefined;
+  'TeleBridgeComposerBlockedKeyExchange': undefined;
+  'TeleBridgeComposerBlockedKeyExchangeTooltip': undefined;
+  'TeleBridgeSendSecuredNoKey': undefined;
+  'TeleBridgeSendSecuredNoKeyDescription': undefined;
 }
 
 export interface LangPairWithVariables<V = LangVariable> {

@@ -13,6 +13,7 @@ import type { IAnchorPosition } from '../../../types';
 import {
   selectChatEncryptionStatus,
   selectIsBridgeUnlocked,
+  selectIsKeyExchangeInProgress,
 } from '../../../global/selectors/telebridge';
 import { IS_TOUCH_ENV } from '../../../util/browser/windowEnvironment';
 import buildClassName from '../../../util/buildClassName';
@@ -59,6 +60,7 @@ export type OwnProps = {
 type StateProps = {
   isBridgeUnlocked?: boolean;
   encryptionStatus?: string;
+  isKeyExchangeInProgress?: boolean;
 };
 
 const ANIMATION_DURATION = 200;
@@ -89,6 +91,7 @@ const CustomSendMenu: FC<OwnProps & StateProps> = ({
   onSendSecured,
   isBridgeUnlocked,
   encryptionStatus,
+  isKeyExchangeInProgress,
 }) => {
   const {
     openEffectPicker,
@@ -190,7 +193,11 @@ const CustomSendMenu: FC<OwnProps & StateProps> = ({
           </MenuItem>
         )}
         {onSendSecured && isBridgeUnlocked && (
-          <MenuItem icon="lock" onClick={onSendSecured}>
+          <MenuItem
+            icon="lock"
+            onClick={isKeyExchangeInProgress || encryptionStatus === 'notEncrypted' ? undefined : onSendSecured}
+            disabled={isKeyExchangeInProgress || encryptionStatus === 'notEncrypted'}
+          >
             {lang('TeleBridgeSendSecured')}
           </MenuItem>
         )}
@@ -203,5 +210,6 @@ export default memo(withGlobal<OwnProps>(
   (global, { chatId }): StateProps => ({
     isBridgeUnlocked: chatId ? selectIsBridgeUnlocked(global) : undefined,
     encryptionStatus: chatId ? selectChatEncryptionStatus(global, chatId) : undefined,
+    isKeyExchangeInProgress: chatId ? selectIsKeyExchangeInProgress(global, chatId) : undefined,
   }),
 )(CustomSendMenu));

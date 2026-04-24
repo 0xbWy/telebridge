@@ -134,6 +134,16 @@ export function selectIsKeyExchangeInProgress(
   return state?.keyExchangeState === 'inProgress';
 }
 
+export function selectHasEstablishedChatKey(
+  global: { telebridge: TeleBridgeState },
+  chatId: string,
+): boolean {
+  const state = selectChatEncryptionState(global, chatId);
+  if (!state) return false;
+  return state.keyExchangeState === 'complete'
+    && (state.status === 'encrypted' || state.status === 'verified' || state.status === 'secured');
+}
+
 export function selectShouldShowStartEncryptedBanner(
   global: { telebridge: TeleBridgeState },
   chatId: string,

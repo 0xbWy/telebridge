@@ -977,3 +977,33 @@
     opacity: 0.3;
   }
 }
+
+// TeleBridge key exchange banner in composer
+.telebridge-key-exchange-banner {
+  display: flex;
+  gap: 0.375rem;
+  align-items: center;
+
+  margin-bottom: 0.125rem;
+  padding: 0.375rem 0.75rem;
+  border-radius: 0.5rem;
+
+  font-size: 0.8125rem;
+  font-weight: var(--font-weight-medium);
+  line-height: 1.25rem;
+  color: var(--color-text-white);
+
+  background: var(--color-chat-interactive);
+
+  .telebridge-key-exchange-banner-icon {
+    flex-shrink: 0;
+    font-size: 0.875rem;
+    line-height: 1;
+  }
+
+  .telebridge-key-exchange-banner-text {
+    font-size: 0.8125rem;
+    font-weight: var(--font-weight-medium);
+    line-height: 1.25rem;
+  }
+}

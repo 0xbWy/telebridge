@@ -2974,3 +2974,7 @@
 "TeleBridgeAboutEncryption" = "About TeleBridge Encryption";
 "TeleBridgeAboutDescription" = "TeleBridge uses a 4-layer encryption system to protect your messages. Layer 1: Ed25519 identity keys. Layer 2: X25519 ECDH key exchange. Layer 3: AES-256-GCM message encryption. Layer 4: Asymmetric secured messages.";
 "TeleBridgeVersion" = "TeleBridge Version";
+"TeleBridgeComposerBlockedKeyExchange" = "Key exchange in progress…";
+"TeleBridgeComposerBlockedKeyExchangeTooltip" = "Encrypted messages are unavailable until key exchange completes. You can still send plain text by dismissing encryption.";
+"TeleBridgeSendSecuredNoKey" = "No encryption key";
+"TeleBridgeSendSecuredNoKeyDescription" = "A key exchange must be completed before sending secured messages. Start an encrypted chat first.";

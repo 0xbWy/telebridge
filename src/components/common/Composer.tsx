@@ -106,6 +106,10 @@ import {
   selectWebPage,
 } from '../../global/selectors';
 import { selectCurrentLimit } from '../../global/selectors/limits';
+import {
+  selectChatEncryptionStatus,
+  selectIsKeyExchangeInProgress,
+} from '../../global/selectors/telebridge';
 import { selectSharedSettings } from '../../global/selectors/sharedState';
 import {
   selectDraft,
@@ -324,6 +328,8 @@ type StateProps = {
   pollMaxAnswers?: number;
   replyToMessage?: ApiMessage;
   shouldOpenMessageMediaEditor?: TabState['shouldOpenMessageMediaEditor'];
+  isKeyExchangeInProgress?: boolean;
+  chatEncryptionStatus?: string;
 };
 
 enum MainButtonState {
@@ -452,6 +458,8 @@ const Composer = ({
   pollMaxAnswers,
   replyToMessage,
   shouldOpenMessageMediaEditor,
+  isKeyExchangeInProgress,
+  chatEncryptionStatus,
   onDropHide,
   onFocus,
   onBlur,
@@ -2053,6 +2061,23 @@ const Composer = ({
   });
 
   const handleSendSecured = useLastCallback(() => {
+    // Check if key exchange is in progress or no encryption key is established
+    if (isKeyExchangeInProgress) {
+      showNotification({
+        localId: 'telebridgeSendSecuredNoKey',
+        message: lang('TeleBridgeSendSecuredNoKey'),
+      });
+      return;
+    }
+
+    if (chatEncryptionStatus === 'notEncrypted') {
+      showNotification({
+        localId: 'telebridgeSendSecuredNoKey',
+        message: lang('TeleBridgeSendSecuredNoKeyDescription'),
+      });
+      return;
+    }
+
     // TODO: Implement Layer 4 secured message send (tb1.a.<base64>)
     // This will be implemented in the messaging pipeline feature
     handleActionWithPaymentConfirmation(sendSilent);
@@ -2229,6 +2254,12 @@ const Composer = ({
         buildClassName('composer-wrapper', isInStoryViewer && 'with-story-tweaks', isNeedPremium && 'is-need-premium')
       }
       >
+        {isInMessageList && isKeyExchangeInProgress && (
+          <div className="telebridge-key-exchange-banner" role="status" aria-label={lang('TeleBridgeComposerBlockedKeyExchange')}>
+            <span className="telebridge-key-exchange-banner-icon" aria-hidden="true">🔐</span>
+            <span className="telebridge-key-exchange-banner-text">{lang('TeleBridgeComposerBlockedKeyExchange')}</span>
+          </div>
+        )}
         {!isNeedPremium && (
           <svg className="svg-appendix" width="9" height="20">
             <defs>
@@ -2890,6 +2921,8 @@ export default memo(withGlobal<OwnProps>(
       pollMaxAnswers: appConfig.pollMaxAnswers,
       shouldOpenMessageMediaEditor,
       replyToMessage,
+      isKeyExchangeInProgress: isUserId(chatId) ? selectIsKeyExchangeInProgress(global, chatId) : undefined,
+      chatEncryptionStatus: isUserId(chatId) ? selectChatEncryptionStatus(global, chatId) : undefined,
     };
   },
 )(Composer));
