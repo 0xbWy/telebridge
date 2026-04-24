@@ -2207,6 +2207,14 @@ export interface LangPair {
   'TeleBridgeComposerBlockedKeyExchangeTooltip': undefined;
   'TeleBridgeSendSecuredNoKey': undefined;
   'TeleBridgeSendSecuredNoKeyDescription': undefined;
+  'TeleBridgeDecryptionFailedDescription': undefined;
+  'TeleBridgeEncryptionFailed': undefined;
+  'TeleBridgeEncryptionFailedDescription': undefined;
+  'TeleBridgeEncryptedMessage': undefined;
+  'TeleBridgeBridgeLockedMessage': undefined;
+  'TeleBridgeKeyRotated': undefined;
+  'TeleBridgeMessageTooLarge': undefined;
+  'TeleBridgeMessageTooLargeDescription': undefined;
 }
 
 export interface LangPairWithVariables<V = LangVariable> {
