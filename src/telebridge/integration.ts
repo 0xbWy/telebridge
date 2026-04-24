@@ -19,8 +19,8 @@
  * - #8: Password never in global state
  */
 
-import type { ProtocolMode } from './crypto/protocol';
 import type { MediaType } from './crypto/media';
+import type { ProtocolMode } from './crypto/protocol';
 
 import {
   getUnlockedIdentity,
@@ -40,13 +40,12 @@ import {
   hasChatKey,
   isTeleBridgeMessage,
   rotateChatKey,
-  setChatKey,
   shouldHideMessage,
   shouldRotateChatKey,
 } from './messages';
 
 // Re-export for external consumers (like Composer.tsx)
-export { hasChatKey } from './messages';
+export { hasChatKey, setChatKey } from './messages';
 
 // ---------- Types ----------
 
