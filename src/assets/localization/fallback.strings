@@ -2978,3 +2978,15 @@
 "TeleBridgeComposerBlockedKeyExchangeTooltip" = "Encrypted messages are unavailable until key exchange completes. You can still send plain text by dismissing encryption.";
 "TeleBridgeSendSecuredNoKey" = "No encryption key";
 "TeleBridgeSendSecuredNoKeyDescription" = "A key exchange must be completed before sending secured messages. Start an encrypted chat first.";
+
+// --- Messaging Pipeline ---
+
+"TeleBridgeDecryptionFailed" = "⚠️ Could not decrypt message";
+"TeleBridgeDecryptionFailedDescription" = "This encrypted message could not be decrypted. The sender's key may have changed.";
+"TeleBridgeEncryptionFailed" = "Failed to encrypt message";
+"TeleBridgeEncryptionFailedDescription" = "The message was not sent to protect your privacy. Please try again.";
+"TeleBridgeEncryptedMessage" = "🔒 Encrypted message";
+"TeleBridgeBridgeLockedMessage" = "🔐 Unlock TeleBridge to read encrypted messages";
+"TeleBridgeKeyRotated" = "🔑 Encryption key refreshed";
+"TeleBridgeMessageTooLarge" = "Message too long for encryption";
+"TeleBridgeMessageTooLargeDescription" = "Encrypted messages are limited to approximately 2,900 characters. Try sending a shorter message.";

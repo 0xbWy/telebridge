@@ -3202,6 +3202,9 @@ export interface ActionPayloads {
   telebridgeSetDefaultEncrypt: { enabled: boolean };
   telebridgeSetTofuAutoAccept: { enabled: boolean };
   telebridgeTofuAutoAccept: { chatId: string; contactName: string };
+  telebridgeEstablishChatKey: { chatId: string; keyBase64: string };
+  telebridgeIncrementMessageCount: { chatId: string };
+  telebridgeRotateChatKey: { chatId: string };
 }
 
 export interface RequiredActionPayloads {
