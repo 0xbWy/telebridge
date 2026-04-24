@@ -17,6 +17,7 @@ import './api/stars';
 import './api/reactions';
 import './api/statistics';
 import './api/stories';
+import './api/telebridge';
 import './ui/initial';
 import './ui/chats';
 import './ui/bots';

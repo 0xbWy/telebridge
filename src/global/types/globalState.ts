@@ -489,6 +489,8 @@ export type GlobalState = {
     balance: ApiTonAmount;
     history: StarsTransactionHistory;
   };
+
+  telebridge: import('../../telebridge/state').TeleBridgeState;
 };
 
 export type RequiredGlobalState = GlobalState & { _: never };

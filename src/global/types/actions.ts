@@ -3186,6 +3186,14 @@ export interface ActionPayloads {
 
   requestMessageMediaEditor: WithTabId | undefined;
   resetMessageMediaEditorRequest: WithTabId | undefined;
+
+  // TeleBridge
+  telebridgeSetPassword: { password: string };
+  telebridgeUnlock: { password: string };
+  telebridgeLock: undefined;
+  telebridgeInitIdentity: undefined;
+  telebridgeClearError: undefined;
+  telebridgeSetRecoveryVerified: { verified: boolean };
 }
 
 export interface RequiredActionPayloads {

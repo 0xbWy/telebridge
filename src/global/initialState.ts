@@ -101,6 +101,11 @@ export const INITIAL_SHARED_STATE: SharedState = {
   isInitial: true,
 };
 
+const INITIAL_TELEBRIDGE_STATE = {
+  hasPassword: false,
+  bridgeState: 'locked' as const,
+};
+
 export const INITIAL_GLOBAL_STATE: GlobalState = {
   cacheVersion: 3,
   isInited: true,
@@ -345,6 +350,8 @@ export const INITIAL_GLOBAL_STATE: GlobalState = {
     isMinimized: false,
     isHidden: false,
   },
+
+  telebridge: INITIAL_TELEBRIDGE_STATE,
 };
 
 export const INITIAL_TAB_STATE: TabState = {

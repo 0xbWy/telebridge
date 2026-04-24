@@ -2109,6 +2109,49 @@ export interface LangPair {
   'TeleBridgeSettingsSecurity': undefined;
   'TeleBridgeSettingsAbout': undefined;
   'TeleBridgeSettingsMenuLink': undefined;
+  'TeleBridgeSetPassword': undefined;
+  'TeleBridgeSetPasswordDescription': undefined;
+  'TeleBridgeEnterPassword': undefined;
+  'TeleBridgeConfirmPassword': undefined;
+  'TeleBridgePasswordMismatch': undefined;
+  'TeleBridgePasswordTooShort': undefined;
+  'TeleBridgePasswordSetSuccess': undefined;
+  'TeleBridgeUnlockBridge': undefined;
+  'TeleBridgeUnlockDescription': undefined;
+  'TeleBridgeWrongPassword': undefined;
+  'TeleBridgeUnlocking': undefined;
+  'TeleBridgeLock': undefined;
+  'TeleBridgeChangePassword': undefined;
+  'TeleBridgeRemovePassword': undefined;
+  'TeleBridgeRecoveryPhrase': undefined;
+  'TeleBridgeRecoveryPhraseDescription': undefined;
+  'TeleBridgeRecoveryPhraseWarning': undefined;
+  'TeleBridgeCopyRecoveryPhrase': undefined;
+  'TeleBridgeRecoveryPhraseCopied': undefined;
+  'TeleBridgeVerifyRecoveryPhrase': undefined;
+  'TeleBridgeVerifyRecoveryDescription': undefined;
+  'TeleBridgeVerifyRecoveryCorrect': undefined;
+  'TeleBridgeVerifyRecoveryIncorrect': undefined;
+  'TeleBridgeRecoveryVerified': undefined;
+  'TeleBridgeShowRecoveryPhrase': undefined;
+  'TeleBridgeBackToRecoveryPhrase': undefined;
+  'TeleBridgeSkipVerification': undefined;
+  'TeleBridgeSkipVerificationConfirm': undefined;
+  'TeleBridgeContinue': undefined;
+  'TeleBridgeIdentityKey': undefined;
+  'TeleBridgeIdentityFingerprint': undefined;
+  'TeleBridgeGenerateIdentity': undefined;
+  'TeleBridgeIdentityGenerated': undefined;
+  'TeleBridgeEncryptionStatus': undefined;
+  'TeleBridgeEncryptionLocked': undefined;
+  'TeleBridgeEncryptionUnlocked': undefined;
+  'TeleBridgePasswordMinLength': undefined;
+  'TeleBridgeBridgeUnlockTitle': undefined;
+  'TeleBridgeClose': undefined;
+  'TeleBridgeNext': undefined;
+  'TeleBridgePrevious': undefined;
+  'TeleBridgeDone': undefined;
+  'TeleBridgeCancel': undefined;
 }
 
 export interface LangPairWithVariables<V = LangVariable> {
@@ -3697,6 +3740,9 @@ export interface LangPairWithVariables<V = LangVariable> {
   };
   'UnofficialSecurityRisk': {
     'peer': V;
+  };
+  'TeleBridgeVerifyRecoveryWord': {
+    'position': V;
   };
 }
 

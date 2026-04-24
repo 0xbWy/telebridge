@@ -1,0 +1,160 @@
+.verification {
+  display: flex;
+  flex-direction: column;
+  padding: 1rem 1.25rem;
+}
+
+.title {
+  font-size: 1.25rem;
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+  margin: 0 0 0.5rem;
+}
+
+.description {
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+  margin-bottom: 1.5rem;
+}
+
+.progress {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.progressDot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: var(--color-borders);
+
+  &.completed {
+    background: var(--color-primary);
+  }
+
+  &.current {
+    background: var(--color-primary);
+    transform: scale(1.3);
+  }
+}
+
+.question {
+  font-size: 1rem;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text);
+  text-align: center;
+  margin-bottom: 1rem;
+}
+
+.optionsGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.optionButton {
+  padding: 0.75rem 1rem;
+  font-size: 0.9375rem;
+  border: 2px solid var(--color-borders);
+  border-radius: 0.5rem;
+  cursor: pointer;
+  background: var(--color-background);
+  color: var(--color-text);
+  transition: all 0.15s ease;
+  text-align: center;
+
+  &:hover {
+    border-color: var(--color-primary);
+    background: rgba(0, 136, 255, 0.05);
+  }
+
+  &.correct {
+    border-color: #4caf50;
+    background: rgba(76, 175, 80, 0.1);
+    color: #2e7d32;
+  }
+
+  &.incorrect {
+    border-color: var(--color-danger);
+    background: rgba(240, 62, 62, 0.1);
+    color: var(--color-danger);
+    animation: shake 0.3s ease;
+  }
+}
+
+.feedback {
+  text-align: center;
+  font-size: 0.875rem;
+  margin-bottom: 0.75rem;
+  min-height: 1.25rem;
+
+  &.correct {
+    color: #4caf50;
+  }
+
+  &.incorrect {
+    color: var(--color-danger);
+  }
+}
+
+.actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: auto;
+}
+
+.skipButton {
+  flex: 0.5;
+  padding: 0.75rem;
+  font-size: 0.9375rem;
+  border: 1px solid var(--color-borders);
+  border-radius: 0.5rem;
+  cursor: pointer;
+  background: transparent;
+  color: var(--color-text-secondary);
+  transition: all 0.15s ease;
+
+  &:hover {
+    background: var(--color-chat-hover);
+  }
+}
+
+.nextButton {
+  flex: 1;
+  padding: 0.75rem;
+  font-size: 1rem;
+  font-weight: var(--font-weight-semibold);
+  border: none;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  background: var(--color-primary);
+  color: white;
+  transition: background-color 0.15s ease;
+
+  &:hover {
+    background: var(--color-primary-shade);
+  }
+
+  &:disabled {
+    background: var(--color-borders);
+    color: var(--color-text-secondary);
+    cursor: not-allowed;
+  }
+}
+
+@keyframes shake {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-4px);
+  }
+  75% {
+    transform: translateX(4px);
+  }
+}
