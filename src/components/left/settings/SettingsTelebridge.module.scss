@@ -32,6 +32,14 @@
   letter-spacing: 0.05em;
 }
 
+.sectionDescription {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+  font-weight: normal;
+  margin-top: 0.125rem;
+}
+
 .identitySection,
 .passwordSection,
 .securitySection {
@@ -64,6 +72,14 @@
   font-size: 0.875rem;
 }
 
+.secondaryText {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+  margin-top: 0.25rem;
+  opacity: 0.7;
+}
+
 .actionButton {
   display: block;
   width: 100%;
@@ -88,6 +104,31 @@
 .dangerButton {
   composes: actionButton;
   color: var(--color-danger);
+}
+
+.toggleDescription {
+  padding: 0 1.25rem 0.5rem;
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+  line-height: 1.4;
+  margin-top: -0.25rem;
+}
+
+.aboutSection {
+  padding: 1rem 1.25rem;
+}
+
+.aboutText {
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
+  line-height: 1.6;
+}
+
+.versionInfo {
+  margin-top: 1rem;
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+  opacity: 0.6;
 }
 
 .lockedOverlay {

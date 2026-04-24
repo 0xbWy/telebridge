@@ -5,6 +5,39 @@
  * Password is NEVER stored in global state (V1 Bug #8 guard).
  */
 
+// ---------- Encryption State Types ----------
+
+/** Per-chat encryption status (5 states for the indicator emoji). */
+export type EncryptionStatus = 'encrypted' | 'notEncrypted' | 'verified' | 'keyChanged' | 'secured';
+
+/** Key exchange states for a chat. */
+export type KeyExchangeState = 'idle' | 'inProgress' | 'complete' | 'failed';
+
+/** Per-chat encryption metadata. */
+export interface ChatEncryptionState {
+  /** Chat ID this state belongs to. */
+  chatId: string;
+  /** Current encryption status indicator. */
+  status: EncryptionStatus;
+  /** Key exchange state for this chat. */
+  keyExchangeState: KeyExchangeState;
+  /** Safety number (grouped numeric fingerprint). */
+  safetyNumber?: string;
+  /** Whether key change has been acknowledged by user. */
+  isKeyChangeAcknowledged?: boolean;
+  /** TOFU auto-accepted key info. */
+  tofuAutoAccepted?: {
+    contactName: string;
+    timestamp: number;
+  };
+  /** Whether "Start Encrypted Chat" banner should be shown. */
+  showStartEncryptedBanner?: boolean;
+  /** Timestamp of last key exchange. */
+  lastKeyExchangeAt?: number;
+  /** Number of messages sent with current key. */
+  messageCount?: number;
+}
+
 // ---------- Bridge State Types ----------
 
 export type BridgeState = 'locked' | 'unlocking' | 'unlocked' | 'error';
@@ -22,11 +55,23 @@ export interface TeleBridgeState {
   errorKey?: string;
   /** Whether recovery phrase has been verified. */
   isRecoveryPhraseVerified?: boolean;
+  /** Per-chat encryption states, indexed by chatId. */
+  chatEncryptionStates: Record<string, ChatEncryptionState>;
+  /** Whether to encrypt new chats by default. */
+  defaultEncryptNewChats?: boolean;
+  /** Whether TOFU auto-accept is enabled (default: true). */
+  tofuAutoAcceptEnabled?: boolean;
+  /** Key rotation threshold: number of messages. */
+  keyRotationMessages?: number;
+  /** Key rotation threshold: number of days. */
+  keyRotationDays?: number;
 }
 
 export const INITIAL_TELEBRIDGE_STATE: TeleBridgeState = {
   hasPassword: false,
   bridgeState: 'locked',
+  chatEncryptionStates: {},
+  tofuAutoAcceptEnabled: true,
 };
 
 // ---------- Selectors ----------
@@ -64,6 +109,45 @@ export function selectTeleBridgeError(global: { telebridge: TeleBridgeState }): 
 
 export function selectIsRecoveryPhraseVerified(global: { telebridge: TeleBridgeState }): boolean {
   return selectTeleBridgeState(global).isRecoveryPhraseVerified ?? false;
+}
+
+export function selectChatEncryptionState(
+  global: { telebridge: TeleBridgeState },
+  chatId: string,
+): ChatEncryptionState | undefined {
+  return selectTeleBridgeState(global).chatEncryptionStates[chatId];
+}
+
+export function selectChatEncryptionStatus(
+  global: { telebridge: TeleBridgeState },
+  chatId: string,
+): EncryptionStatus {
+  const state = selectChatEncryptionState(global, chatId);
+  return state?.status ?? 'notEncrypted';
+}
+
+export function selectIsKeyExchangeInProgress(
+  global: { telebridge: TeleBridgeState },
+  chatId: string,
+): boolean {
+  const state = selectChatEncryptionState(global, chatId);
+  return state?.keyExchangeState === 'inProgress';
+}
+
+export function selectShouldShowStartEncryptedBanner(
+  global: { telebridge: TeleBridgeState },
+  chatId: string,
+): boolean {
+  const state = selectChatEncryptionState(global, chatId);
+  return state?.showStartEncryptedBanner ?? true;
+}
+
+export function selectDefaultEncryptNewChats(global: { telebridge: TeleBridgeState }): boolean {
+  return selectTeleBridgeState(global).defaultEncryptNewChats ?? false;
+}
+
+export function selectTofuAutoAcceptEnabled(global: { telebridge: TeleBridgeState }): boolean {
+  return selectTeleBridgeState(global).tofuAutoAcceptEnabled ?? true;
 }
 
 // ---------- Reducers ----------
@@ -105,8 +189,8 @@ export function setBridgeUnlocking(global: any): any {
 export function setBridgeError(global: any, errorKey: string): any {
   return updateTeleBridgeState(global, (state) => ({
     ...state,
-    bridgeState: 'error' as BridgeState,
-    errorKey,
+    bridgeState: errorKey ? 'error' as BridgeState : state.bridgeState,
+    errorKey: errorKey || undefined,
   }));
 }
 
@@ -131,5 +215,110 @@ export function setRecoveryPhraseVerified(global: any, verified: boolean): any {
   return updateTeleBridgeState(global, (state) => ({
     ...state,
     isRecoveryPhraseVerified: verified,
+  }));
+}
+
+export function setChatEncryptionState(
+  global: any,
+  chatId: string,
+  updater: (chatState: ChatEncryptionState) => ChatEncryptionState,
+): any {
+  return updateTeleBridgeState(global, (state) => {
+    const existing = state.chatEncryptionStates[chatId] ?? {
+      chatId,
+      status: 'notEncrypted' as EncryptionStatus,
+      keyExchangeState: 'idle' as KeyExchangeState,
+      showStartEncryptedBanner: true,
+    };
+    return {
+      ...state,
+      chatEncryptionStates: {
+        ...state.chatEncryptionStates,
+        [chatId]: updater(existing),
+      },
+    };
+  });
+}
+
+export function setChatEncryptionStatus(
+  global: any,
+  chatId: string,
+  status: EncryptionStatus,
+): any {
+  return setChatEncryptionState(global, chatId, (chatState) => ({
+    ...chatState,
+    status,
+  }));
+}
+
+export function setChatKeyExchangeState(
+  global: any,
+  chatId: string,
+  keyExchangeState: KeyExchangeState,
+): any {
+  return setChatEncryptionState(global, chatId, (chatState) => ({
+    ...chatState,
+    keyExchangeState,
+    ...(keyExchangeState === 'complete' ? { showStartEncryptedBanner: false } : {}),
+    ...(keyExchangeState === 'complete' ? { status: 'encrypted' as EncryptionStatus } : {}),
+  }));
+}
+
+export function setChatSafetyNumber(
+  global: any,
+  chatId: string,
+  safetyNumber: string,
+): any {
+  return setChatEncryptionState(global, chatId, (chatState) => ({
+    ...chatState,
+    safetyNumber,
+  }));
+}
+
+export function acknowledgeKeyChange(
+  global: any,
+  chatId: string,
+): any {
+  return setChatEncryptionState(global, chatId, (chatState) => ({
+    ...chatState,
+    isKeyChangeAcknowledged: true,
+  }));
+}
+
+export function setTofuAutoAccepted(
+  global: any,
+  chatId: string,
+  contactName: string,
+): any {
+  return setChatEncryptionState(global, chatId, (chatState) => ({
+    ...chatState,
+    tofuAutoAccepted: {
+      contactName,
+      timestamp: Date.now(),
+    },
+  }));
+}
+
+export function dismissStartEncryptedBanner(
+  global: any,
+  chatId: string,
+): any {
+  return setChatEncryptionState(global, chatId, (chatState) => ({
+    ...chatState,
+    showStartEncryptedBanner: false,
+  }));
+}
+
+export function setDefaultEncryptNewChats(global: any, enabled: boolean): any {
+  return updateTeleBridgeState(global, (state) => ({
+    ...state,
+    defaultEncryptNewChats: enabled,
+  }));
+}
+
+export function setTofuAutoAcceptEnabled(global: any, enabled: boolean): any {
+  return updateTeleBridgeState(global, (state) => ({
+    ...state,
+    tofuAutoAcceptEnabled: enabled,
   }));
 }

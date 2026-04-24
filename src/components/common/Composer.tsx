@@ -2052,6 +2052,12 @@ const Composer = ({
     });
   });
 
+  const handleSendSecured = useLastCallback(() => {
+    // TODO: Implement Layer 4 secured message send (tb1.a.<base64>)
+    // This will be implemented in the messaging pipeline feature
+    handleActionWithPaymentConfirmation(sendSilent);
+  });
+
   const handleSendSilent = useLastCallback(() => {
     handleActionWithPaymentConfirmation(sendSilent);
   });
@@ -2677,6 +2683,7 @@ const Composer = ({
           isInSavedMessages={isChatWithSelf}
           isInStoryViewer={isInStoryViewer}
           canPlayAnimatedEmojis={canPlayAnimatedEmojis}
+          onSendSecured={handleSendSecured}
         />
       )}
       {calendar}

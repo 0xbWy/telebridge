@@ -1,10 +1,13 @@
 /**
  * TeleBridge — Global State Actions
  *
- * Actions for bridge password management, unlock, lock, and identity.
+ * Actions for bridge password management, unlock, lock, identity,
+ * key exchange, and per-chat encryption state.
  * Password is NEVER passed through global state (V1 Bug #8 guard).
  */
 
+import type { EncryptedKeyStore } from '../../../telebridge/crypto/persistence';
+import type { EncryptionStatus } from '../../../telebridge/state';
 import type { ActionReturnType } from '../../types';
 
 import {
@@ -14,36 +17,29 @@ import {
   deriveX25519FromEd25519,
   generateIdentityKeypair,
 } from '../../../telebridge/crypto/identity';
-import type { EncryptedKeyStore } from '../../../telebridge/crypto/persistence';
 import {
   createEncryptedKeyStore,
   unlockBridge,
 } from '../../../telebridge/crypto/persistence';
 import {
-  addActionHandler, setGlobal,
+  addActionHandler, getGlobal, setGlobal,
 } from '../../index';
 import {
+  acknowledgeKeyChange,
+  dismissStartEncryptedBanner,
   setBridgeError,
   setBridgeIdentity,
   setBridgeLocked,
   setBridgePasswordSet,
   setBridgeUnlocked,
   setBridgeUnlocking,
+  setChatEncryptionStatus as setChatEncryptionStatusReducer,
+  setChatKeyExchangeState,
+  setDefaultEncryptNewChats,
   setRecoveryPhraseVerified,
+  setTofuAutoAccepted,
+  setTofuAutoAcceptEnabled,
 } from '../../reducers/telebridge';
-
-// ---------- Action Types ----------
-
-declare global {
-  interface ActionPayloads {
-    telebridgeSetPassword: { password: string };
-    telebridgeUnlock: { password: string };
-    telebridgeLock: undefined;
-    telebridgeInitIdentity: undefined;
-    telebridgeClearError: undefined;
-    telebridgeSetRecoveryVerified: { verified: boolean };
-  }
-}
 
 // ---------- Bridge Password Setup ----------
 
@@ -163,6 +159,65 @@ addActionHandler('telebridgeClearError', (global): ActionReturnType => {
 addActionHandler('telebridgeSetRecoveryVerified', (global, actions, payload): ActionReturnType => {
   const { verified } = payload;
   return setRecoveryPhraseVerified(global, verified);
+});
+
+// ---------- Key Exchange ----------
+
+addActionHandler('telebridgeStartKeyExchange', (global, actions, payload): ActionReturnType => {
+  const { chatId } = payload;
+  global = setChatKeyExchangeState(global, chatId, 'inProgress');
+  setGlobal(global);
+
+  // Simulate key exchange completion after a short delay
+  // In a real implementation, this would send a tb1.kx.<base64> message via Telegram
+  // and wait for the handshake response
+  setTimeout(() => {
+    const currentGlobal = getGlobal();
+    global = setChatKeyExchangeState(currentGlobal, chatId, 'complete');
+    setGlobal(global);
+  }, 2000);
+
+  return global;
+});
+
+// ---------- Chat Encryption Status ----------
+
+addActionHandler('telebridgeSetChatEncryptionStatus', (global, actions, payload): ActionReturnType => {
+  const { chatId, status } = payload;
+  return setChatEncryptionStatusReducer(global, chatId, status as EncryptionStatus);
+});
+
+// ---------- Key Change ----------
+
+addActionHandler('telebridgeAcknowledgeKeyChange', (global, actions, payload): ActionReturnType => {
+  const { chatId } = payload;
+  return acknowledgeKeyChange(global, chatId);
+});
+
+// ---------- Banner ----------
+
+addActionHandler('telebridgeDismissBanner', (global, actions, payload): ActionReturnType => {
+  const { chatId } = payload;
+  return dismissStartEncryptedBanner(global, chatId);
+});
+
+// ---------- Settings ----------
+
+addActionHandler('telebridgeSetDefaultEncrypt', (global, actions, payload): ActionReturnType => {
+  const { enabled } = payload;
+  return setDefaultEncryptNewChats(global, enabled);
+});
+
+addActionHandler('telebridgeSetTofuAutoAccept', (global, actions, payload): ActionReturnType => {
+  const { enabled } = payload;
+  return setTofuAutoAcceptEnabled(global, enabled);
+});
+
+// ---------- TOFU ----------
+
+addActionHandler('telebridgeTofuAutoAccept', (global, actions, payload): ActionReturnType => {
+  const { chatId, contactName } = payload;
+  return setTofuAutoAccepted(global, chatId, contactName);
 });
 
 // ---------- Helper: IndexedDB ----------

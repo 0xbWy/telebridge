@@ -104,6 +104,8 @@ export const INITIAL_SHARED_STATE: SharedState = {
 const INITIAL_TELEBRIDGE_STATE = {
   hasPassword: false,
   bridgeState: 'locked' as const,
+  chatEncryptionStates: {},
+  tofuAutoAcceptEnabled: true,
 };
 
 export const INITIAL_GLOBAL_STATE: GlobalState = {

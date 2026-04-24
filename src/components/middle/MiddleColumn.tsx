@@ -84,6 +84,10 @@ import Composer from '../common/Composer';
 import PrivacySettingsNoticeModal from '../common/PrivacySettingsNoticeModal.async';
 import SeenByModal from '../common/SeenByModal.async';
 import UnpinAllMessagesModal from '../common/UnpinAllMessagesModal.async';
+import KeyChangeWarning from '../telebridge/KeyChangeWarning';
+import KeyExchangeStatus from '../telebridge/KeyExchangeStatus';
+import TelebridgeBanner from '../telebridge/TelebridgeBanner';
+import TofuBanner from '../telebridge/TofuBanner';
 import Button from '../ui/Button';
 import Transition from '../ui/Transition';
 import ChatLanguageModal from './ChatLanguageModal.async';
@@ -552,6 +556,14 @@ function MiddleColumn({
               getLoadingPinnedId={getLoadingPinnedId}
               onFocusPinnedMessage={handleFocusPinnedMessage}
             />
+            {isUserId(renderingChatId!) && (
+              <>
+                <TelebridgeBanner chatId={renderingChatId!} />
+                <KeyExchangeStatus chatId={renderingChatId!} />
+                <KeyChangeWarning chatId={renderingChatId!} />
+                <TofuBanner chatId={renderingChatId!} />
+              </>
+            )}
             <Transition
               name={resolveTransitionName(
                 'slide',

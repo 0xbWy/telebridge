@@ -3194,6 +3194,13 @@ export interface ActionPayloads {
   telebridgeInitIdentity: undefined;
   telebridgeClearError: undefined;
   telebridgeSetRecoveryVerified: { verified: boolean };
+  telebridgeStartKeyExchange: { chatId: string };
+  telebridgeSetChatEncryptionStatus: { chatId: string; status: string };
+  telebridgeAcknowledgeKeyChange: { chatId: string };
+  telebridgeDismissBanner: { chatId: string };
+  telebridgeSetDefaultEncrypt: { enabled: boolean };
+  telebridgeSetTofuAutoAccept: { enabled: boolean };
+  telebridgeTofuAutoAccept: { chatId: string; contactName: string };
 }
 
 export interface RequiredActionPayloads {

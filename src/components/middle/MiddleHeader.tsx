@@ -49,6 +49,7 @@ import useWindowSize from '../../hooks/window/useWindowSize';
 import GroupChatInfo from '../common/GroupChatInfo';
 import PrivateChatInfo from '../common/PrivateChatInfo';
 import UnreadCounter from '../common/UnreadCounter';
+import TelebridgeLock from '../telebridge/TelebridgeLock';
 import Button from '../ui/Button';
 import Transition from '../ui/Transition';
 import HeaderActions from './HeaderActions';
@@ -313,6 +314,9 @@ const MiddleHeader: FC<OwnProps & StateProps> = ({
             />
           )}
         </div>
+        {isUserId(displayChatId) && (
+          <TelebridgeLock chatId={displayChatId} />
+        )}
       </>
     );
   }

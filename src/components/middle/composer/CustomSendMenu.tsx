@@ -2,7 +2,7 @@ import type { FC } from '../../../lib/teact/teact';
 import {
   memo, useEffect, useState,
 } from '../../../lib/teact/teact';
-import { getActions } from '../../../global';
+import { getActions, withGlobal } from '../../../global';
 
 import type {
   ApiAvailableReaction,
@@ -10,6 +10,10 @@ import type {
 } from '../../../api/types';
 import type { IAnchorPosition } from '../../../types';
 
+import {
+  selectChatEncryptionStatus,
+  selectIsBridgeUnlocked,
+} from '../../../global/selectors/telebridge';
 import { IS_TOUCH_ENV } from '../../../util/browser/windowEnvironment';
 import buildClassName from '../../../util/buildClassName';
 
@@ -49,11 +53,17 @@ export type OwnProps = {
   isInSavedMessages?: boolean;
   isInStoryViewer?: boolean;
   canPlayAnimatedEmojis?: boolean;
+  onSendSecured?: NoneToVoidFunction;
+};
+
+type StateProps = {
+  isBridgeUnlocked?: boolean;
+  encryptionStatus?: string;
 };
 
 const ANIMATION_DURATION = 200;
 
-const CustomSendMenu: FC<OwnProps> = ({
+const CustomSendMenu: FC<OwnProps & StateProps> = ({
   isOpen,
   isOpenToBottom = false,
   isSavedMessages,
@@ -76,6 +86,9 @@ const CustomSendMenu: FC<OwnProps> = ({
   isInSavedMessages,
   isInStoryViewer,
   canPlayAnimatedEmojis,
+  onSendSecured,
+  isBridgeUnlocked,
+  encryptionStatus,
 }) => {
   const {
     openEffectPicker,
@@ -176,9 +189,19 @@ const CustomSendMenu: FC<OwnProps> = ({
             {lang('RemoveEffect')}
           </MenuItem>
         )}
+        {onSendSecured && isBridgeUnlocked && (
+          <MenuItem icon="lock" onClick={onSendSecured}>
+            {lang('TeleBridgeSendSecured')}
+          </MenuItem>
+        )}
       </div>
     </Menu>
   );
 };
 
-export default memo(CustomSendMenu);
+export default memo(withGlobal<OwnProps>(
+  (global, { chatId }): StateProps => ({
+    isBridgeUnlocked: chatId ? selectIsBridgeUnlocked(global) : undefined,
+    encryptionStatus: chatId ? selectChatEncryptionStatus(global, chatId) : undefined,
+  }),
+)(CustomSendMenu));

@@ -2109,6 +2109,7 @@ export interface LangPair {
   'TeleBridgeSettingsSecurity': undefined;
   'TeleBridgeSettingsAbout': undefined;
   'TeleBridgeSettingsMenuLink': undefined;
+  'TeleBridgeBridgePassword': undefined;
   'TeleBridgeSetPassword': undefined;
   'TeleBridgeSetPasswordDescription': undefined;
   'TeleBridgeEnterPassword': undefined;
@@ -2152,6 +2153,56 @@ export interface LangPair {
   'TeleBridgePrevious': undefined;
   'TeleBridgeDone': undefined;
   'TeleBridgeCancel': undefined;
+  'TeleBridgeEncrypted': undefined;
+  'TeleBridgeNotEncrypted': undefined;
+  'TeleBridgeVerified': undefined;
+  'TeleBridgeKeyChanged': undefined;
+  'TeleBridgeSecured': undefined;
+  'TeleBridgeEncryptedTooltip': undefined;
+  'TeleBridgeNotEncryptedTooltip': undefined;
+  'TeleBridgeVerifiedTooltip': undefined;
+  'TeleBridgeKeyChangedTooltip': undefined;
+  'TeleBridgeSecuredTooltip': undefined;
+  'TeleBridgeStartEncryptedChat': undefined;
+  'TeleBridgeStartEncryptedChatDescription': undefined;
+  'TeleBridgeStartKeyExchange': undefined;
+  'TeleBridgeKeyExchangeInProgress': undefined;
+  'TeleBridgeKeyExchangeComplete': undefined;
+  'TeleBridgeKeyExchangeFailed': undefined;
+  'TeleBridgeKeyExchangeRetrying': undefined;
+  'TeleBridgeKeyChangeWarning': undefined;
+  'TeleBridgeVerifyContact': undefined;
+  'TeleBridgeDismiss': undefined;
+  'TeleBridgeSafetyNumber': undefined;
+  'TeleBridgeSafetyNumberMatch': undefined;
+  'TeleBridgeSafetyNumberMismatch': undefined;
+  'TeleBridgeTofuAutoAccepted': undefined;
+  'TeleBridgeVerifySafetyNumber': undefined;
+  'TeleBridgeSendSecured': undefined;
+  'TeleBridgeSendSecuredTooltip': undefined;
+  'TeleBridgeSettingsIdentityDescription': undefined;
+  'TeleBridgeSettingsPasswordDescription': undefined;
+  'TeleBridgeSettingsContactsDescription': undefined;
+  'TeleBridgeSettingsChatsDescription': undefined;
+  'TeleBridgeSettingsSecurityDescription': undefined;
+  'TeleBridgeSettingsAboutDescription': undefined;
+  'TeleBridgeVerifiedContacts': undefined;
+  'TeleBridgeUnverifiedContacts': undefined;
+  'TeleBridgeNoVerifiedContacts': undefined;
+  'TeleBridgeNoUnverifiedContacts': undefined;
+  'TeleBridgeDefaultEncryption': undefined;
+  'TeleBridgeDefaultEncryptionDescription': undefined;
+  'TeleBridgeAutoAcceptKeys': undefined;
+  'TeleBridgeAutoAcceptKeysDescription': undefined;
+  'TeleBridgeKeyRotationMessages': undefined;
+  'TeleBridgeKeyRotationTime': undefined;
+  'TeleBridgeSecurityLog': undefined;
+  'TeleBridgeVerifyIdentity': undefined;
+  'TeleBridgeResetEncryption': undefined;
+  'TeleBridgeResetEncryptionConfirm': undefined;
+  'TeleBridgeAboutEncryption': undefined;
+  'TeleBridgeAboutDescription': undefined;
+  'TeleBridgeVersion': undefined;
 }
 
 export interface LangPairWithVariables<V = LangVariable> {
@@ -3743,6 +3794,15 @@ export interface LangPairWithVariables<V = LangVariable> {
   };
   'TeleBridgeVerifyRecoveryWord': {
     'position': V;
+  };
+  'TeleBridgeKeyChangeWarningDescription': {
+    'name': V;
+  };
+  'TeleBridgeSafetyNumberDescription': {
+    'name': V;
+  };
+  'TeleBridgeTofuInfo': {
+    'name': V;
   };
 }
 
