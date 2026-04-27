@@ -10,9 +10,7 @@
  * VAL-SEC-004: Forward secrecy after key compromise — past messages cannot be decrypted
  */
 
-import type { ProtocolMessage } from './crypto/protocol';
-
-import { decodeProtocol, PROTOCOL_VERSION } from './crypto/protocol';
+import { decodeProtocol } from './crypto/protocol';
 
 // ---------- Replay Attack Detection (VAL-SEC-001) ----------
 
@@ -38,7 +36,7 @@ interface SeenMessageEntry {
  * VAL-SEC-001: Replayed encrypted messages are detected and rejected as duplicates.
  */
 export class ReplayDetector {
-  private seenMessages: Map<string, SeenMessageEntry[]> = new Map();
+  private seenMessages = new Map<string, SeenMessageEntry[]>();
 
   /**
    * Check if a message has been seen before (replay attack).

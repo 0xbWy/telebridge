@@ -52,7 +52,8 @@ export function createDecryptionError(
   type: DecryptionErrorType,
   chatId: string,
 ): DecryptionErrorInfo {
-  const errorMessages: Record<DecryptionErrorType, { messageKey: string; descriptionKey: string; canRetry: boolean }> = {
+  type ErrorConfig = { messageKey: string; descriptionKey: string; canRetry: boolean };
+  const errorMessages: Record<DecryptionErrorType, ErrorConfig> = {
     tamperedCiphertext: {
       messageKey: 'TeleBridgeDecryptionFailed',
       descriptionKey: 'TeleBridgeDecryptionFailedDescription',
@@ -239,7 +240,7 @@ export function createKeyExchangeTracker(
 
 /** Error type for Argon2id memory issues. */
 export class Argon2idMemoryError extends Error {
-  readonly isMemoryError: true = true;
+  readonly isMemoryError = true as const;
 
   constructor(cause?: Error) {
     super(
@@ -265,9 +266,9 @@ export function isArgon2idMemoryError(error: unknown): boolean {
     const msg = error.message.toLowerCase();
     // Common WASM/buffer allocation error messages
     if (msg.includes('out of memory') || msg.includes('oom')
-        || msg.includes('memory allocation') || msg.includes('buffer')
-        || msg.includes('wasm') && msg.includes('fail')
-        || msg.includes('not enough memory') || msg.includes('allocate')) {
+      || msg.includes('memory allocation') || msg.includes('buffer')
+      || (msg.includes('wasm') && msg.includes('fail'))
+      || msg.includes('not enough memory') || msg.includes('allocate')) {
       return true;
     }
   }
@@ -329,7 +330,7 @@ export function classifyIndexedDBError(error: unknown): IndexedDBErrorType {
     const name = (error as any).name?.toLowerCase?.() ?? '';
 
     if (name === 'quotaexceedederror' || msg.includes('quota')
-        || msg.includes('storage') || msg.includes('disk full')) {
+      || msg.includes('storage') || msg.includes('disk full')) {
       return 'quotaExceeded';
     }
 
@@ -414,25 +415,26 @@ export async function withIndexedDBFallback<T>(
 export class InMemoryKeyStore {
   private store = new Map<string, string>();
 
-  async get(key: string): Promise<string | undefined> {
-    return this.store.get(key);
+  get(key: string): Promise<string | undefined> {
+    return Promise.resolve(this.store.get(key));
   }
 
-  async put(key: string, value: string): Promise<void> {
+  put(key: string, value: string): Promise<void> {
     this.store.set(key, value);
+    return Promise.resolve();
   }
 
-  async delete(key: string): Promise<void> {
+  delete(key: string): Promise<void> {
     this.store.delete(key);
+    return Promise.resolve();
   }
 
-  async clear(): Promise<void> {
+  clear(): Promise<void> {
     this.store.clear();
+    return Promise.resolve();
   }
 
-  get isAvailable(): boolean {
-    return true;
-  }
+  readonly isAvailable = true;
 }
 
 /** Global in-memory fallback keystore instance. */

@@ -2280,6 +2280,7 @@ export interface LangPair {
   'TeleBridgeShowIdentityQR': undefined;
   'TeleBridgeCopyFingerprint': undefined;
   'TeleBridgeFingerprintCopied': undefined;
+  'TeleBridgeMessageTooLong': undefined;
   'TeleBridgeMessageNearLimit': undefined;
   'TeleBridgeKeyExchangeTimeout': undefined;
   'TeleBridgeKeyExchangeRetry': undefined;

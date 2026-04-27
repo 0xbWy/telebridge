@@ -1,18 +1,20 @@
 .warning {
   display: flex;
-  align-items: flex-start;
   gap: 0.75rem;
+  align-items: flex-start;
+
+  margin: 0.5rem 0;
   padding: 0.75rem 1rem;
-  background: var(--warning-background, #fef3cd);
   border-left: 3px solid #e67e22;
   border-radius: 0.25rem;
-  margin: 0.5rem 0;
+
+  background: var(--warning-background, #fef3cd);
 }
 
 .icon {
+  flex-shrink: 0;
   font-size: 1.25rem;
   line-height: 1;
-  flex-shrink: 0;
 }
 
 .content {
@@ -21,23 +23,23 @@
 }
 
 .title {
+  margin-bottom: 0.25rem;
   font-weight: var(--font-weight-semibold, 600);
   color: #856404;
-  margin-bottom: 0.25rem;
 }
 
 .description {
-  font-size: 0.875rem;
-  color: #856404;
   margin-bottom: 0.5rem;
+  font-size: 0.875rem;
   line-height: 1.4;
+  color: #856404;
 }
 
 .nonDismissable {
-  font-size: 0.75rem;
-  color: #a0522d;
-  font-style: italic;
   margin-bottom: 0.5rem;
+  font-size: 0.75rem;
+  font-style: italic;
+  color: #a0522d;
 }
 
 .userList {
@@ -48,9 +50,9 @@
 
 .userRow {
   display: flex;
+  gap: 0.5rem;
   align-items: center;
   justify-content: space-between;
-  gap: 0.5rem;
 }
 
 .userId {
@@ -59,16 +61,19 @@
 }
 
 .verifyButton {
-  font-size: 0.75rem;
-  padding: 0.25rem 0.75rem;
-  border-radius: 0.25rem;
-  border: 1px solid #e67e22;
-  background: transparent;
-  color: #e67e22;
   cursor: pointer;
 
+  padding: 0.25rem 0.75rem;
+  border: 1px solid #e67e22;
+  border-radius: 0.25rem;
+
+  font-size: 0.75rem;
+  color: #e67e22;
+
+  background: transparent;
+
   &:hover {
-    background: #e67e22;
     color: white;
+    background: #e67e22;
   }
 }

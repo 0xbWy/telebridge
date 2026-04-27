@@ -176,11 +176,12 @@ async function deriveKeyArgon2id(
     // VAL-ERR-004: Catch OOM errors from Argon2id WASM and throw user-friendly error
     const errMsg = error instanceof Error ? error.message.toLowerCase() : '';
     if (errMsg.includes('out of memory') || errMsg.includes('oom')
-        || errMsg.includes('memory') || errMsg.includes('wasm')
-        || errMsg.includes('allocate') || errMsg.includes('buffer')) {
+      || errMsg.includes('memory') || errMsg.includes('wasm')
+      || errMsg.includes('allocate') || errMsg.includes('buffer')) {
       throw new Error(
         'TeleBridge is unable to allocate the required memory for secure password hashing. '
         + 'Please close other tabs or applications and try again.',
+        { cause: error },
       );
     }
     // Re-throw other errors

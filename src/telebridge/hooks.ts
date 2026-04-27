@@ -128,11 +128,17 @@ export function useTelebridgeDecryption(
   }, [text, chatId, senderId, ourUserId]);
 
   if (!text) {
-    return { decryptedText: undefined, isProtocol: false, shouldHide: false, isSecured: false, isDecrypting: false, decryptionErrorKey: undefined };
+    return {
+      decryptedText: undefined, isProtocol: false, shouldHide: false,
+      isSecured: false, isDecrypting: false, decryptionErrorKey: undefined,
+    };
   }
 
   if (!isTeleBridgeMessage(text)) {
-    return { decryptedText: undefined, isProtocol: false, shouldHide: false, isSecured: false, isDecrypting: false, decryptionErrorKey: undefined };
+    return {
+      decryptedText: undefined, isProtocol: false, shouldHide: false,
+      isSecured: false, isDecrypting: false, decryptionErrorKey: undefined,
+    };
   }
 
   // VAL-ERR-001: If decryption failed, return the localized error key

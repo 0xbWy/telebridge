@@ -11,7 +11,7 @@
  * - BIP39 recovery after storage clear (VAL-DATA-003)
  */
 
-import { PROTOCOL_VERSION, MAX_PLAINTEXT_BYTES } from './crypto/protocol';
+import { MAX_PLAINTEXT_BYTES } from './crypto/protocol';
 
 // ---------- Empty/Whitespace/Unicode Messages (VAL-EDGE-001, VAL-EDGE-002) ----------
 
@@ -59,31 +59,31 @@ export function verifyRoundTrip(originalText: string, decryptedText: string): bo
  */
 export const EDGE_CASE_MESSAGES: readonly string[] = [
   // VAL-EDGE-001: Empty and whitespace
-  '',                              // Empty string
-  ' ',                             // Single space
-  '  ',                            // Multiple spaces
-  '\t',                            // Tab
-  '\n',                            // Newline
-  '\r\n',                          // CRLF
-  '  \t\n  ',                      // Mixed whitespace
+  '', // Empty string
+  ' ', // Single space
+  '  ', // Multiple spaces
+  '\t', // Tab
+  '\n', // Newline
+  '\r\n', // CRLF
+  '  \t\n  ', // Mixed whitespace
 
   // VAL-EDGE-002: Unicode edge cases
-  '🎮',                            // Emoji (U+1F3AE)
-  '👋🏽',                           // Emoji with skin tone modifier
-  '👨‍👩‍👧‍👦',                           // ZWJ sequence (family)
-  '🏳️‍🌈',                           // Flag with ZWJ sequence
-  'עברית',                          // RTL text (Hebrew)
-  'العربية',                          // RTL text (Arabic)
-  '日本語テスト',                      // CJK (Japanese)
-  '中文测试',                          // CJK (Chinese)
-  '🎉🎊🎈🎁',                        // Multiple emoji
-  'a\u0300',                        // Combining character (à)
-  'é',                              // Precomposed character
-  'e\u0301',                         // Decomposed character (NFD)
-  '\u0000',                         // Null byte
-  '\uFFFF',                         // Non-character
-  '🇺🇸',                           // Flag emoji (US)
-  'Line1\nLine2\nLine3',          // Multi-line
+  '🎮', // Emoji (U+1F3AE)
+  '👋🏽', // Emoji with skin tone modifier
+  '👨‍👩‍👧‍👦', // ZWJ sequence (family)
+  '🏳️‍🌈', // Flag with ZWJ sequence
+  'עברית', // RTL text (Hebrew)
+  'العربية', // RTL text (Arabic)
+  '日本語テスト', // CJK (Japanese)
+  '中文测试', // CJK (Chinese)
+  '🎉🎊🎈🎁', // Multiple emoji
+  'a\u0300', // Combining character (à)
+  'é', // Precomposed character
+  'e\u0301', // Decomposed character (NFD)
+  '\u0000', // Null byte
+  '\uFFFF', // Non-character
+  '🇺🇸', // Flag emoji (US)
+  'Line1\nLine2\nLine3', // Multi-line
 
   // Typical messages
   'Hello, TeleBridge!',

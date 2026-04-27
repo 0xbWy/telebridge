@@ -636,16 +636,15 @@ export async function recoverFromMnemonic(
   identity: UnlockedIdentity;
   keyStore: EncryptedKeyStore;
 }> {
-  // Import BIP39 module
+  // Import BIP39 and identity modules
   const { mnemonicToKey } = await import('./bip39');
-  const { generateIdentityKeypair } = await import('./identity');
+  const { generateIdentityKeypairFromSeed } = await import('./identity');
 
-  // Derive the encryption key from the mnemonic
-  const key = await mnemonicToKey(mnemonic);
+  // Derive the encryption key from the mnemonic (synchronous)
+  const key = mnemonicToKey(mnemonic);
 
-  // Recover the Ed25519 keypair from the derived key
-  // The key is used as a deterministic seed for keypair generation
-  const identityKeypair = generateIdentityKeypair();
+  // Recover the Ed25519 keypair deterministically from the derived key
+  const identityKeypair = generateIdentityKeypairFromSeed(key);
 
   // Create a new encrypted key store with the new password
   const keyStore = await createEncryptedKeyStore(identityKeypair, newPassword);

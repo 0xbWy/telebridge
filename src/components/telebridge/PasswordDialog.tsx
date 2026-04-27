@@ -90,7 +90,7 @@ const PasswordDialog = ({ mode, errorKey, isLoading, onSubmit }: OwnProps) => {
             type="button"
             className={styles.toggleButton}
             onClick={isPasswordVisible ? hidePassword : showPassword}
-            aria-label={isPasswordVisible ? 'Hide password' : 'Show password'}
+            aria-label={lang('AriaPasswordToggle')}
             tabIndex={-1}
           >
             <i className={isPasswordVisible ? 'icon-eye-closed' : 'icon-eye'} />
@@ -118,7 +118,7 @@ const PasswordDialog = ({ mode, errorKey, isLoading, onSubmit }: OwnProps) => {
               type="button"
               className={styles.toggleButton}
               onClick={isConfirmVisible ? hideConfirm : showConfirm}
-              aria-label={isConfirmVisible ? 'Hide password' : 'Show password'}
+              aria-label={lang('AriaPasswordToggle')}
               tabIndex={-1}
             >
               <i className={isConfirmVisible ? 'icon-eye-closed' : 'icon-eye'} />

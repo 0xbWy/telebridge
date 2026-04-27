@@ -33,6 +33,9 @@ import {
   PROTOCOL_PREFIX,
 } from './crypto/protocol';
 import {
+  validateMessageInputSize,
+} from './edgeCases';
+import {
   clearAllChatKeys,
   decryptProtocolMessage,
   encryptMessage,
@@ -43,24 +46,11 @@ import {
   shouldHideMessage,
   shouldRotateChatKey,
 } from './messages';
-
-import {
-  createDecryptionError,
-  classifyDecryptionError,
-  handleEncryptionFailure,
-  isEncryptionFailure,
-} from './errorHandling';
-
 import {
   replayDetector,
-  validateProtocolMessage,
-  validateProtocolVersion,
   validateKeyExchangeMessage,
+  validateProtocolVersion,
 } from './security';
-
-import {
-  validateMessageInputSize,
-} from './edgeCases';
 
 // Re-exports for external consumers (like Composer.tsx)
 export { hasChatKey, setChatKey, isTeleBridgeMessage } from './messages';
