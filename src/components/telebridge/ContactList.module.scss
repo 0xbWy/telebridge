@@ -1,0 +1,137 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.locked, .empty {
+  text-align: center;
+  padding: 2rem;
+  color: var(--color-text-secondary);
+  font-size: 0.875rem;
+}
+
+.section {
+  margin-bottom: 1rem;
+}
+
+.sectionTitle {
+  font-weight: var(--font-weight-semibold, 600);
+  font-size: 0.8125rem;
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.5rem;
+}
+
+.contactRow {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+  background: var(--color-background, #f5f5f5);
+
+  &:hover {
+    background: var(--color-chat-hover, #e8e8e8);
+  }
+}
+
+.badge {
+  flex-shrink: 0;
+  width: 1.5rem;
+  height: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  border-radius: 50%;
+}
+
+.badgeVerified {
+  background: #d4edda;
+}
+
+.badgeUnverified {
+  background: #fff3cd;
+}
+
+.badgeUnknown {
+  background: #e2e3e5;
+}
+
+.contactInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.contactId {
+  font-size: 0.875rem;
+  font-weight: var(--font-weight-medium, 500);
+  color: var(--color-text);
+}
+
+.fingerprint {
+  font-family: monospace;
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+  margin-top: 0.125rem;
+}
+
+.meta {
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+  margin-top: 0.25rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.keyChangeCount {
+  color: #e67e22;
+}
+
+.tofuLabel {
+  color: var(--color-text-secondary);
+  font-style: italic;
+}
+
+.verifiedAt {
+  color: #27ae60;
+}
+
+.actions {
+  flex-shrink: 0;
+  display: flex;
+  gap: 0.25rem;
+}
+
+.actionButton {
+  font-size: 0.75rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: 0.25rem;
+  border: 0.0625rem solid;
+  cursor: pointer;
+}
+
+.verifyButton {
+  border-color: #27ae60;
+  color: #27ae60;
+  background: transparent;
+
+  &:hover {
+    background: #27ae60;
+    color: white;
+  }
+}
+
+.unverifyButton {
+  border-color: #e67e22;
+  color: #e67e22;
+  background: transparent;
+
+  &:hover {
+    background: #e67e22;
+    color: white;
+  }
+}

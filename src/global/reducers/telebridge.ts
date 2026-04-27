@@ -5,7 +5,8 @@
  */
 
 import type {
-  BridgeState, ChatEncryptionState, EncryptionStatus, GroupEncryptionStatus, KeyExchangeState, TeleBridgeState,
+  BridgeState, ChatEncryptionState, ContactVerificationEntry, ContactVerificationStatus,
+  EncryptionStatus, GroupEncryptionStatus, KeyExchangeState, TeleBridgeState,
 } from '../../telebridge/state';
 
 import { INITIAL_TELEBRIDGE_STATE } from '../../telebridge/state';
@@ -201,5 +202,100 @@ export function setIsGroupChat(
   return setChatEncryptionState(global, chatId, (chatState) => ({
     ...chatState,
     isGroupChat: isGroup,
+  }));
+}
+
+// ---------- Contact Verification Reducers ----------
+
+export function setContactVerification(
+  global: any,
+  userId: string,
+  entry: ContactVerificationEntry,
+): any {
+  return updateTeleBridgeState(global, (state) => ({
+    ...state,
+    contactVerificationStates: {
+      ...state.contactVerificationStates,
+      [userId]: entry,
+    },
+  }));
+}
+
+export function setContactVerificationStatus(
+  global: any,
+  userId: string,
+  verificationStatus: ContactVerificationStatus,
+): any {
+  const state = global.telebridge ?? INITIAL_TELEBRIDGE_STATE;
+  const existing = state.contactVerificationStates[userId];
+
+  const entry: ContactVerificationEntry = existing
+    ? { ...existing, verificationStatus }
+    : {
+      userId,
+      verificationStatus,
+      keyChangeCount: 0,
+      isTofuAccepted: false,
+    };
+
+  return updateTeleBridgeState(global, (s) => ({
+    ...s,
+    contactVerificationStates: {
+      ...s.contactVerificationStates,
+      [userId]: entry,
+    },
+  }));
+}
+
+export function setContactFingerprint(
+  global: any,
+  userId: string,
+  fingerprint: string,
+): any {
+  const state = global.telebridge ?? INITIAL_TELEBRIDGE_STATE;
+  const existing = state.contactVerificationStates[userId];
+
+  const entry: ContactVerificationEntry = existing
+    ? { ...existing, currentFingerprint: fingerprint }
+    : {
+      userId,
+      verificationStatus: 'unknown' as ContactVerificationStatus,
+      currentFingerprint: fingerprint,
+      keyChangeCount: 0,
+      isTofuAccepted: true,
+    };
+
+  return updateTeleBridgeState(global, (s) => ({
+    ...s,
+    contactVerificationStates: {
+      ...s.contactVerificationStates,
+      [userId]: entry,
+    },
+  }));
+}
+
+// ---------- Group Key Change Warning Reducers ----------
+
+export function setGroupKeyChangeWarning(
+  global: any,
+  chatId: string,
+  hasWarning: boolean,
+  changedUserIds: string[],
+): any {
+  return setChatEncryptionState(global, chatId, (chatState) => ({
+    ...chatState,
+    hasGroupKeyChangeWarning: hasWarning,
+    groupKeyChangeUserIds: changedUserIds,
+  }));
+}
+
+export function setReducedSecurity(
+  global: any,
+  chatId: string,
+  hasReducedSecurity: boolean,
+): any {
+  return setChatEncryptionState(global, chatId, (chatState) => ({
+    ...chatState,
+    hasReducedSecurity,
   }));
 }

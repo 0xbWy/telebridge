@@ -7,7 +7,7 @@
  */
 
 import type { EncryptedKeyStore } from '../../../telebridge/crypto/persistence';
-import type { EncryptionStatus, GroupEncryptionStatus, KeyExchangeState } from '../../../telebridge/state';
+import type { ContactVerificationStatus, EncryptionStatus, GroupEncryptionStatus, KeyExchangeState } from '../../../telebridge/state';
 import type { ActionReturnType } from '../../types';
 
 import {
@@ -33,9 +33,14 @@ import {
   setChatEncryptionState,
   setChatEncryptionStatus as setChatEncryptionStatusReducer,
   setChatKeyExchangeState,
+  setContactFingerprint,
+  setContactVerification,
+  setContactVerificationStatus,
   setDefaultEncryptNewChats,
   setGroupEncryptionStatus as setGroupEncryptionStatusReducer,
+  setGroupKeyChangeWarning,
   setIsGroupChat,
+  setReducedSecurity,
   setRecoveryPhraseVerified,
   setTofuAutoAccepted,
   setTofuAutoAcceptEnabled,
@@ -594,3 +599,201 @@ function base64ToArray(base64: string): Uint8Array {
   }
   return arr;
 }
+
+// ---------- Identity QR Verification ----------
+
+addActionHandler('telebridgeGenerateIdentityQr', (global): ActionReturnType => {
+  const state = global.telebridge;
+  if (!state?.ed25519PublicKey) return global;
+
+  const { computeFingerprint, generateVerificationUri } = require(
+    '../../../telebridge/identity/identityQr',
+  ) as typeof import('../../../telebridge/identity/identityQr');
+
+  const publicKeyBytes = base64ToArray(state.ed25519PublicKey);
+  const fingerprint = computeFingerprint(publicKeyBytes);
+  const userId = global.currentUserId?.toString() ?? '';
+
+  const verificationUri = generateVerificationUri({
+    ed25519PublicKey: publicKeyBytes,
+    userId,
+  });
+
+  // Store the fingerprint in global state for quick access
+  return updateTeleBridgeState(global, (s) => ({
+    ...s,
+    identityFingerprint: fingerprint,
+    identityVerificationUri: verificationUri,
+  }));
+});
+
+addActionHandler('telebridgeVerifyContactQr', (global, actions, payload): ActionReturnType => {
+  const { userId, scannedUri } = payload as { userId: string; scannedUri: string };
+
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { parseVerificationUri, verifyQrFingerprint } = require(
+    '../../../telebridge/identity/identityQr',
+  ) as typeof import('../../../telebridge/identity/identityQr');
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { processContactKeyChange } = require(
+    '../../../telebridge/identity/contactVerification',
+  ) as typeof import('../../../telebridge/identity/contactVerification');
+
+  const parsed = parseVerificationUri(scannedUri);
+  if (!parsed) {
+    // Invalid QR code — not a TeleBridge verification URI
+    return setContactVerificationStatus(global, userId, 'unverified');
+  }
+
+  const contactState = global.telebridge?.contactVerificationStates[userId];
+  const currentFingerprint = contactState?.currentFingerprint;
+  const result = verifyQrFingerprint(scannedUri, currentFingerprint ?? '');
+
+  if (result === 'verified') {
+    // Fingerprint matches — mark contact as verified
+    global = setContactVerificationStatus(global, userId, 'verified');
+  } else {
+    // Fingerprint mismatch — mark as unverified and trigger key change detection
+    global = setContactVerificationStatus(global, userId, 'unverified');
+
+    // Process key change for all chats shared with this contact
+    if (currentFingerprint && parsed.fingerprint !== currentFingerprint) {
+      const keyChangeResult = processContactKeyChange(userId, parsed.fingerprint, 'qr_scan');
+      if (keyChangeResult.isKeyChange) {
+        // Update fingerprint in global state
+        global = setContactFingerprint(global, userId, parsed.fingerprint);
+
+        // Set key change warnings in all encrypted chats with this contact
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        const contactChats = Object.entries(global.telebridge?.chatEncryptionStates ?? {})
+          .filter(([, chatState]) => chatState.keyExchangeState === 'complete')
+          .map(([chatId]) => chatId);
+
+        for (const chatId of contactChats) {
+          const existingUsers = global.telebridge?.chatEncryptionStates[chatId]?.groupKeyChangeUserIds ?? [];
+          const updatedUsers = existingUsers.includes(userId)
+            ? existingUsers
+            : [...existingUsers, userId];
+          global = setGroupKeyChangeWarning(global, chatId, true, updatedUsers);
+        }
+      }
+    }
+  }
+
+  return global;
+});
+
+addActionHandler('telebridgeVerifyContactManual', (global, actions, payload): ActionReturnType => {
+  const { userId } = payload as { userId: string };
+  return setContactVerificationStatus(global, userId, 'verified');
+});
+
+addActionHandler('telebridgeUnverifyContact', (global, actions, payload): ActionReturnType => {
+  const { userId } = payload as { userId: string };
+  return setContactVerificationStatus(global, userId, 'unverified');
+});
+
+// ---------- Contact Initialization ----------
+
+addActionHandler('telebridgeInitContact', (global, actions, payload): ActionReturnType => {
+  const { userId, fingerprint } = payload as { userId: string; fingerprint: string };
+
+  const existing = global.telebridge?.contactVerificationStates[userId];
+  if (existing) {
+    // Contact already known — check for key change
+    if (existing.currentFingerprint && existing.currentFingerprint !== fingerprint) {
+      // Key change detected
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const { processContactKeyChange } = require(
+        '../../../telebridge/identity/contactVerification',
+      ) as typeof import('../../../telebridge/identity/contactVerification');
+
+      const result = processContactKeyChange(userId, fingerprint, 'key_exchange');
+
+      global = setContactFingerprint(global, userId, fingerprint);
+      global = setContactVerificationStatus(global, userId, result.newStatus);
+
+      if (result.isKeyChange) {
+        // Set key change warning for all chats with this contact
+        const contactChats = Object.entries(global.telebridge?.chatEncryptionStates ?? {})
+          .filter(([, chatState]) => chatState.keyExchangeState === 'complete')
+          .map(([chatId]) => chatId);
+
+        for (const chatId of contactChats) {
+          const existingUsers = global.telebridge?.chatEncryptionStates[chatId]?.groupKeyChangeUserIds ?? [];
+          const updatedUsers = existingUsers.includes(userId)
+            ? existingUsers
+            : [...existingUsers, userId];
+          global = setGroupKeyChangeWarning(global, chatId, true, updatedUsers);
+        }
+      }
+    }
+    // Same key — no change needed
+    return global;
+  }
+
+  // New contact — initialize as unknown (TOFU)
+  const entry: ContactVerificationEntry = {
+    userId,
+    verificationStatus: 'unknown',
+    currentFingerprint: fingerprint,
+    keyChangeCount: 0,
+    isTofuAccepted: true,
+  };
+
+  return setContactVerification(global, userId, entry);
+});
+
+// ---------- Group Key Change ----------
+
+addActionHandler('telebridgeSetGroupKeyChangeWarning', (global, actions, payload): ActionReturnType => {
+  const { chatId, hasWarning, changedUserIds } = payload as {
+    chatId: string;
+    hasWarning: boolean;
+    changedUserIds: string[];
+  };
+  return setGroupKeyChangeWarning(global, chatId, hasWarning, changedUserIds);
+});
+
+addActionHandler('telebridgeClearGroupKeyChangeWarning', (global, actions, payload): ActionReturnType => {
+  const { chatId, userId } = payload as { chatId: string; userId: string };
+  const existingUsers = global.telebridge?.chatEncryptionStates[chatId]?.groupKeyChangeUserIds ?? [];
+  const updatedUsers = existingUsers.filter((id) => id !== userId);
+  return setGroupKeyChangeWarning(global, chatId, updatedUsers.length > 0, updatedUsers);
+});
+
+addActionHandler('telebridgeSetReducedSecurity', (global, actions, payload): ActionReturnType => {
+  const { chatId, hasReducedSecurity } = payload as {
+    chatId: string;
+    hasReducedSecurity: boolean;
+  };
+  return setReducedSecurity(global, chatId, hasReducedSecurity);
+});
+
+addActionHandler('telebridgeDemoteContactOnKeyChange', (global, actions, payload): ActionReturnType => {
+  const { userId, chatId, newFingerprint } = payload as {
+    userId: string;
+    chatId: string;
+    newFingerprint: string;
+  };
+
+  // Demote contact status to unverified
+  global = setContactVerificationStatus(global, userId, 'unverified');
+  global = setContactFingerprint(global, userId, newFingerprint);
+
+  // Set group key change warning (non-dismissible)
+  const existingUsers = global.telebridge?.chatEncryptionStates[chatId]?.groupKeyChangeUserIds ?? [];
+  const updatedUsers = existingUsers.includes(userId)
+    ? existingUsers
+    : [...existingUsers, userId];
+  global = setGroupKeyChangeWarning(global, chatId, true, updatedUsers);
+
+  // Process the key change in the contact verification module
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { processContactKeyChange } = require(
+    '../../../telebridge/identity/contactVerification',
+  ) as typeof import('../../../telebridge/identity/contactVerification');
+  processContactKeyChange(userId, newFingerprint, 'key_change');
+
+  return global;
+});

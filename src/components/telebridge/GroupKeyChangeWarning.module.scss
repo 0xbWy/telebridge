@@ -1,0 +1,74 @@
+.warning {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  background: var(--warning-background, #fef3cd);
+  border-left: 3px solid #e67e22;
+  border-radius: 0.25rem;
+  margin: 0.5rem 0;
+}
+
+.icon {
+  font-size: 1.25rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.content {
+  flex: 1;
+  min-width: 0;
+}
+
+.title {
+  font-weight: var(--font-weight-semibold, 600);
+  color: #856404;
+  margin-bottom: 0.25rem;
+}
+
+.description {
+  font-size: 0.875rem;
+  color: #856404;
+  margin-bottom: 0.5rem;
+  line-height: 1.4;
+}
+
+.nonDismissable {
+  font-size: 0.75rem;
+  color: #a0522d;
+  font-style: italic;
+  margin-bottom: 0.5rem;
+}
+
+.userList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.userRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.userId {
+  font-size: 0.875rem;
+  color: #856404;
+}
+
+.verifyButton {
+  font-size: 0.75rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: 0.25rem;
+  border: 1px solid #e67e22;
+  background: transparent;
+  color: #e67e22;
+  cursor: pointer;
+
+  &:hover {
+    background: #e67e22;
+    color: white;
+  }
+}

@@ -2219,6 +2219,67 @@ export interface LangPair {
   'TeleBridgeEncryptFailedDescription': undefined;
   'TeleBridgeSendSecuredFailed': undefined;
   'TeleBridgeSecuredBadge': undefined;
+  'TeleBridgeGroupEncryptionLocked': undefined;
+  'TeleBridgeGroupEncryptionWarning': undefined;
+  'TeleBridgeGroupEncryptionTransitional': undefined;
+  'TeleBridgeGroupEncryptionNotEncrypted': undefined;
+  'TeleBridgeGroupEncryptionLockedTooltip': undefined;
+  'TeleBridgeGroupEncryptionWarningTooltip': undefined;
+  'TeleBridgeGroupEncryptionTransitionalTooltip': undefined;
+  'TeleBridgeGroupEncryptionNotEncryptedTooltip': undefined;
+  'TeleBridgeGroupMemberEncrypted': undefined;
+  'TeleBridgeGroupMemberPending': undefined;
+  'TeleBridgeGroupMemberMissing': undefined;
+  'TeleBridgeGroupMemberKeyChanged': undefined;
+  'TeleBridgeGroupMemberUnencrypted': undefined;
+  'TeleBridgeGroupStartEncryption': undefined;
+  'TeleBridgeGroupStartEncryptionDescription': undefined;
+  'TeleBridgeGroupRekeying': undefined;
+  'TeleBridgeGroupMemberJoined': undefined;
+  'TeleBridgeMemberLeft': undefined;
+  'TeleBridgeGroupNoRetroactiveAccess': undefined;
+  'TeleBridgeGroupDecryptionFailed': undefined;
+  'TeleBridgeGroupDecryptionFailedDescription': undefined;
+  'TeleBridgeGroupEncryptionDetail': undefined;
+  'TeleBridgeGroupPerMemberStatus': undefined;
+  'TeleBridgeGroupForwardSecrecy': undefined;
+  'TeleBridgeIdentityQR': undefined;
+  'TeleBridgeIdentityQRDescription': undefined;
+  'TeleBridgeScanQR': undefined;
+  'TeleBridgeScanQRDescription': undefined;
+  'TeleBridgeVerifyContactQR': undefined;
+  'TeleBridgeVerifyContactManual': undefined;
+  'TeleBridgeContactKeyChanged': undefined;
+  'TeleBridgeContactKeyHistory': undefined;
+  'TeleBridgeContactKeyHistoryEmpty': undefined;
+  'TeleBridgeContactFirstSeen': undefined;
+  'TeleBridgeContactLastActive': undefined;
+  'TeleBridgeContactVerifiedAt': undefined;
+  'TeleBridgeContactAutoAccepted': undefined;
+  'TeleBridgeContactVerificationStatus': undefined;
+  'TeleBridgeGroupKeyChangeWarningMultiple': undefined;
+  'TeleBridgeGroupKeyChangeWarningDescription': undefined;
+  'TeleBridgeGroupKeyChangeNonDismissable': undefined;
+  'TeleBridgeGroupReducedSecurity': undefined;
+  'TeleBridgeGroupReducedSecurityDescription': undefined;
+  'TeleBridgeGroupUnencryptedMembers': undefined;
+  'TeleBridgeGroupMixedEncryption': undefined;
+  'TeleBridgeGroupNoEncryptionArtifacts': undefined;
+  'TeleBridgeContactListTitle': undefined;
+  'TeleBridgeUnknownContacts': undefined;
+  'TeleBridgeNoUnknownContacts': undefined;
+  'TeleBridgeQRVerified': undefined;
+  'TeleBridgeQRMismatch': undefined;
+  'TeleBridgeQRInvalid': undefined;
+  'TeleBridgeCrossPartySafetyNumber': undefined;
+  'TeleBridgeReVerify': undefined;
+  'TeleBridgeUnverifiedKeyChange': undefined;
+  'TeleBridgeKeyChangeInGroup': undefined;
+  'TeleBridgeMessageFromUnverified': undefined;
+  'TeleBridgeNoEncryptionArtifactsGroup': undefined;
+  'TeleBridgeShowIdentityQR': undefined;
+  'TeleBridgeCopyFingerprint': undefined;
+  'TeleBridgeFingerprintCopied': undefined;
 }
 
 export interface LangPairWithVariables<V = LangVariable> {
@@ -3818,6 +3879,15 @@ export interface LangPairWithVariables<V = LangVariable> {
     'name': V;
   };
   'TeleBridgeTofuInfo': {
+    'name': V;
+  };
+  'TeleBridgeContactKeyChangedDescription': {
+    'name': V;
+  };
+  'TeleBridgeGroupKeyChangeWarning': {
+    'name': V;
+  };
+  'TeleBridgeKeyChangeInGroupDescription': {
     'name': V;
   };
 }

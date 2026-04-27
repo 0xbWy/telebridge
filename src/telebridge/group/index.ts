@@ -10,6 +10,11 @@
  * - Member leaves: all remaining regenerate Sender Keys, forward secrecy enforced
  * - Concurrent sends from different members with independent sequence tracking
  * - Group encryption status indicator (locked, warning, transitional, per-member detail)
+ * - Identity QR verification (generate, scan, verify contacts)
+ * - Contact management (verified/unverified/unknown badges, key history)
+ * - Key change detection in groups with non-dismissible warnings
+ * - Mixed encrypted/unencrypted member handling with reduced-security warnings
+ * - Fallback for unencrypted groups (no Sender Key operations, no encryption UI)
  */
 
 // Sender Key types and operations
@@ -88,3 +93,30 @@ export {
   clearGroupEncryption,
   clearAllGroupEncryption,
 } from './groupState';
+
+// Group key change detection
+export type {
+  GroupKeyChangeEvent,
+  GroupKeyChangeWarning,
+  MixedMemberComposition,
+  ReducedSecurityWarning,
+} from './groupKeyChange';
+
+export {
+  recordGroupKeyChange,
+  getGroupKeyChanges,
+  getGroupKeyChange,
+  acknowledgeGroupKeyChange,
+  clearGroupKeyChange,
+  getGroupKeyChangeWarning,
+  hasGroupKeyChangeWarning,
+  updateGroupMixedComposition,
+  getGroupMixedComposition,
+  getGroupReducedSecurityWarning,
+  isGroupReducedSecurity,
+  shouldHideEncryptionArtifacts,
+  isUnencryptedGroup,
+  clearGroupKeyChangeData,
+  clearAllGroupKeyChangeData,
+  groupKeyChangeStore,
+} from './groupKeyChange';

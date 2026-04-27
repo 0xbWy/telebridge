@@ -5,7 +5,7 @@
  */
 
 import type {
-  BridgeState, ChatEncryptionState, EncryptionStatus, GroupEncryptionStatus, TeleBridgeState,
+  BridgeState, ChatEncryptionState, ContactVerificationEntry, EncryptionStatus, GroupEncryptionStatus, TeleBridgeState,
 } from '../../telebridge/state';
 
 import { INITIAL_TELEBRIDGE_STATE } from '../../telebridge/state';
@@ -106,4 +106,61 @@ export function selectIsGroupChat(
   chatId: string,
 ): boolean {
   return selectChatEncryptionState(global, chatId)?.isGroupChat ?? false;
+}
+
+export function selectContactVerification(
+  global: { telebridge?: TeleBridgeState },
+  userId: string,
+): ContactVerificationEntry | undefined {
+  return selectTeleBridgeState(global).contactVerificationStates[userId];
+}
+
+export function selectContactVerificationStatus(
+  global: { telebridge?: TeleBridgeState },
+  userId: string,
+): 'verified' | 'unverified' | 'unknown' {
+  return selectTeleBridgeState(global).contactVerificationStates[userId]?.verificationStatus ?? 'unknown';
+}
+
+export function selectAllVerifiedContacts(global: { telebridge?: TeleBridgeState }): ContactVerificationEntry[] {
+  return Object.values(selectTeleBridgeState(global).contactVerificationStates)
+    .filter((c) => c.verificationStatus === 'verified');
+}
+
+export function selectAllUnverifiedContacts(global: { telebridge?: TeleBridgeState }): ContactVerificationEntry[] {
+  return Object.values(selectTeleBridgeState(global).contactVerificationStates)
+    .filter((c) => c.verificationStatus === 'unverified');
+}
+
+export function selectAllUnknownContacts(global: { telebridge?: TeleBridgeState }): ContactVerificationEntry[] {
+  return Object.values(selectTeleBridgeState(global).contactVerificationStates)
+    .filter((c) => c.verificationStatus === 'unknown');
+}
+
+export function selectHasGroupKeyChangeWarning(
+  global: { telebridge?: TeleBridgeState },
+  chatId: string,
+): boolean {
+  return selectChatEncryptionState(global, chatId)?.hasGroupKeyChangeWarning ?? false;
+}
+
+export function selectGroupKeyChangeUserIds(
+  global: { telebridge?: TeleBridgeState },
+  chatId: string,
+): string[] {
+  return selectChatEncryptionState(global, chatId)?.groupKeyChangeUserIds ?? [];
+}
+
+export function selectHasReducedSecurity(
+  global: { telebridge?: TeleBridgeState },
+  chatId: string,
+): boolean {
+  return selectChatEncryptionState(global, chatId)?.hasReducedSecurity ?? false;
+}
+
+export function selectContactFingerprint(
+  global: { telebridge?: TeleBridgeState },
+  userId: string,
+): string | undefined {
+  return selectTeleBridgeState(global).contactVerificationStates[userId]?.currentFingerprint;
 }
