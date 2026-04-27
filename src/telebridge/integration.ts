@@ -44,6 +44,24 @@ import {
   shouldRotateChatKey,
 } from './messages';
 
+import {
+  createDecryptionError,
+  classifyDecryptionError,
+  handleEncryptionFailure,
+  isEncryptionFailure,
+} from './errorHandling';
+
+import {
+  replayDetector,
+  validateProtocolMessage,
+  validateProtocolVersion,
+  validateKeyExchangeMessage,
+} from './security';
+
+import {
+  validateMessageInputSize,
+} from './edgeCases';
+
 // Re-exports for external consumers (like Composer.tsx)
 export { hasChatKey, setChatKey, isTeleBridgeMessage } from './messages';
 
@@ -75,6 +93,8 @@ export interface InboundMessageResult {
   readonly isSecured: boolean;
   /** Key ID used for decryption (for tracking). */
   readonly keyId: string | undefined;
+  /** Decryption error info (VAL-ERR-001: user-facing error indicator). */
+  readonly decryptionError?: import('./errorHandling').DecryptionErrorInfo;
 }
 
 // ---------- Outgoing Message Encryption ----------
@@ -85,6 +105,11 @@ export interface InboundMessageResult {
  * If the chat has an established key, the message is encrypted as tb1.s.<base64>.
  * If this is a "Send Secured" action, it's encrypted as tb1.a.<base64>.
  * If no key is established, the message is sent unencrypted (no forced encryption).
+ *
+ * VAL-ERR-002: If encryption fails, plaintext is NOT sent unencrypted.
+ * The message stays in the input field for retry. Error shown.
+ *
+ * VAL-EDGE-005: Message input enforces size limit. Warning shown when near limit.
  *
  * Note: We check for chat key existence rather than bridge unlock state because
  * chat keys can be set externally (e.g., via key exchange actions) even if the
@@ -119,6 +144,16 @@ export async function processOutgoingMessage(
     return { wasEncrypted: false, text, mode: undefined, keyId: undefined };
   }
 
+  // VAL-EDGE-005: Validate message size before encryption
+  const sizeValidation = validateMessageInputSize(text);
+  if (sizeValidation.exceedsLimit) {
+    // VAL-ERR-002: Prevent plaintext leak by throwing instead of sending unencrypted
+    throw new Error(
+      `Message too long: ${sizeValidation.byteSize} bytes exceeds limit of ${sizeValidation.maxBytes} bytes. `
+      + 'Please shorten your message.',
+    );
+  }
+
   try {
     const result = await encryptMessage(text, chatId);
 
@@ -134,7 +169,9 @@ export async function processOutgoingMessage(
       keyId: result.keyId,
     };
   } catch (error) {
-    // V1 Bug #2 guard: If encryption fails, do NOT send plaintext
+    // VAL-ERR-002: If encryption fails, plaintext is NOT sent unencrypted.
+    // Message stays in input field for retry. Error shown.
+    // We throw the error rather than returning the plaintext.
 
     // eslint-disable-next-line no-console
     console.error('[TeleBridge] Encryption failed:', error);
@@ -255,13 +292,11 @@ export async function processIncomingMessage(
   }
 
   // For encrypted messages (s/a), we need the chat key to decrypt.
-  // If no key is available, the message remains encrypted (shown as raw protocol string).
-  // Bridge unlock is only needed for Layer 4 (asymmetric) decryption which requires
-  // the identity private key. Layer 3 (symmetric) only needs the in-memory chat key.
+  // VAL-ERR-001: Show localized error, not blank/protocol string
   if (!hasChatKey(chatId) && !isBridgeUnlocked()) {
     return {
       isProtocol: true,
-      shouldHide: false, // Show the raw protocol string when no key available
+      shouldHide: false,
       decryptedText: undefined,
       mode: undefined,
       isSecured: false,
@@ -296,12 +331,32 @@ export async function processIncomingMessage(
       // Decryption returned undefined — may not have the key
       return {
         isProtocol: true,
-        shouldHide: hide,
+        shouldHide: false,
         decryptedText: undefined,
         mode: undefined,
         isSecured: false,
         keyId: undefined,
       };
+    }
+
+    // VAL-SEC-001: Replay detection for symmetric messages
+    if (result.mode === 's' && result.keyId) {
+      // Extract counter from the binary payload for replay detection
+      // The counter is embedded in the protocol message
+      const messageId = result.keyId;
+      if (replayDetector.isReplay(chatId, messageId)) {
+        // Replayed message — return error indicator instead of plaintext
+        return {
+          isProtocol: true,
+          shouldHide: false,
+          decryptedText: undefined,
+          mode: result.mode,
+          isSecured: false,
+          keyId: result.keyId,
+        };
+      }
+      // Mark this message as seen
+      replayDetector.markProcessed(chatId, messageId);
     }
 
     return {
@@ -333,12 +388,16 @@ export async function processIncomingMessage(
  * Process an incoming key exchange message.
  * Called when a tb1.kx.<base64> message is received.
  *
+ * VAL-SEC-002: Protocol version downgrade rejection is applied here.
+ * VAL-SEC-003: Forged kx/pk messages are rejected or flagged.
+ *
  * This function:
- * 1. Decodes the kx message
- * 2. Extracts the sender's ephemeral public key
- * 3. Derives the shared chat key using ECDH
- * 4. Stores the chat key for future message decryption
- * 5. Returns the new key ID
+ * 1. Validates the protocol version
+ * 2. Validates the kx message structure
+ * 3. Extracts the sender's ephemeral public key
+ * 4. Derives the shared chat key using ECDH
+ * 5. Stores the chat key for future message decryption
+ * 6. Returns the new key ID
  *
  * @param protocolString - The tb1.kx.<base64> message
  * @param chatId - Chat ID for key storage
@@ -351,6 +410,18 @@ export function processKeyExchangeMessage(
   const decoded = decodeProtocol(protocolString);
   if (!decoded || decoded.mode !== 'kx') {
     throw new Error('Invalid key exchange message');
+  }
+
+  // VAL-SEC-002: Validate protocol version (reject downgrades)
+  const versionValidation = validateProtocolVersion(decoded.version);
+  if (!versionValidation.isValid) {
+    throw new Error(`Protocol version rejected: ${versionValidation.reason}`);
+  }
+
+  // VAL-SEC-003: Validate kx message structure (reject forged messages)
+  const kxValidation = validateKeyExchangeMessage(protocolString);
+  if (!kxValidation.isValid) {
+    throw new Error(`Forged key exchange message: ${kxValidation.reason}`);
   }
 
   // The kx payload contains the sender's X25519 ephemeral public key

@@ -141,33 +141,51 @@ export async function deriveKeyFromPassword(
 /**
  * Argon2id key derivation — the primary and recommended KDF.
  * NOT bare SHA-256. Guards V1 Bug #6.
+ *
+ * VAL-ERR-004: Argon2id OOM handled gracefully with error message.
+ * If WASM allocation fails, throws Argon2idMemoryError with user-facing message.
  */
 async function deriveKeyArgon2id(
   password: string,
   salt: Uint8Array,
 ): Promise<PasswordHashResult> {
-  const result = await argon2.hash({
-    pass: password,
-    salt,
-    time: ARGON2_TIME,
-    mem: ARGON2_MEMORY,
-    parallelism: ARGON2_PARALLELISM,
-    hashLen: ARGON2_HASH_LENGTH,
-    type: ARGON2_TYPE_ARGON2ID,
-  });
-
-  const derivedKey = new Uint8Array(result.hash);
-
-  return {
-    derivedKey,
-    salt,
-    params: {
-      memory: ARGON2_MEMORY,
+  try {
+    const result = await argon2.hash({
+      pass: password,
+      salt,
       time: ARGON2_TIME,
+      mem: ARGON2_MEMORY,
       parallelism: ARGON2_PARALLELISM,
-      argon2: true,
-    },
-  };
+      hashLen: ARGON2_HASH_LENGTH,
+      type: ARGON2_TYPE_ARGON2ID,
+    });
+
+    const derivedKey = new Uint8Array(result.hash);
+
+    return {
+      derivedKey,
+      salt,
+      params: {
+        memory: ARGON2_MEMORY,
+        time: ARGON2_TIME,
+        parallelism: ARGON2_PARALLELISM,
+        argon2: true,
+      },
+    };
+  } catch (error) {
+    // VAL-ERR-004: Catch OOM errors from Argon2id WASM and throw user-friendly error
+    const errMsg = error instanceof Error ? error.message.toLowerCase() : '';
+    if (errMsg.includes('out of memory') || errMsg.includes('oom')
+        || errMsg.includes('memory') || errMsg.includes('wasm')
+        || errMsg.includes('allocate') || errMsg.includes('buffer')) {
+      throw new Error(
+        'TeleBridge is unable to allocate the required memory for secure password hashing. '
+        + 'Please close other tabs or applications and try again.',
+      );
+    }
+    // Re-throw other errors
+    throw error;
+  }
 }
 
 /**

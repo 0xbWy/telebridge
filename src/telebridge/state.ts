@@ -16,6 +16,20 @@ export type GroupEncryptionStatus = 'locked' | 'warning' | 'transitional' | 'not
 /** Key exchange states for a chat. */
 export type KeyExchangeState = 'idle' | 'inProgress' | 'complete' | 'failed';
 
+/** Per-chat decryption error tracking for user-facing error display. */
+export interface DecryptionErrorEntry {
+  /** The message ID that failed decryption. */
+  readonly messageId: string;
+  /** Localization key for the error message. */
+  readonly messageKey: string;
+  /** Localization key for the error description. */
+  readonly descriptionKey: string;
+  /** Whether the user can retry. */
+  readonly canRetry: boolean;
+  /** Timestamp of the error. */
+  readonly timestamp: number;
+}
+
 /** Per-chat encryption metadata. */
 export interface ChatEncryptionState {
   /** Chat ID this state belongs to. */
@@ -49,6 +63,8 @@ export interface ChatEncryptionState {
   hasReducedSecurity?: boolean;
   /** User IDs of group members whose keys have changed. */
   groupKeyChangeUserIds?: string[];
+  /** Decryption errors for this chat, keyed by message ID. */
+  decryptionErrors?: Record<string, DecryptionErrorEntry>;
 }
 
 /** Contact verification status for a user. */
@@ -559,4 +575,96 @@ export function setReducedSecurity(
     ...chatState,
     hasReducedSecurity,
   }));
+}
+
+// ---------- Decryption Error Tracking ----------
+
+/**
+ * Add a decryption error entry for a specific message.
+ * VAL-ERR-001: Decryption failure shows user-facing error (not blank/protocol string).
+ */
+export function addDecryptionError(
+  global: any,
+  chatId: string,
+  messageId: string,
+  messageKey: string,
+  descriptionKey: string,
+  canRetry: boolean,
+): any {
+  return setChatEncryptionState(global, chatId, (chatState) => ({
+    ...chatState,
+    decryptionErrors: {
+      ...chatState.decryptionErrors,
+      [messageId]: {
+        messageId,
+        messageKey,
+        descriptionKey,
+        canRetry,
+        timestamp: Date.now(),
+      },
+    },
+  }));
+}
+
+/**
+ * Remove a decryption error entry (e.g., when message is successfully decrypted after retry).
+ */
+export function removeDecryptionError(
+  global: any,
+  chatId: string,
+  messageId: string,
+): any {
+  return setChatEncryptionState(global, chatId, (chatState) => {
+    const { [messageId]: _, ...remaining } = chatState.decryptionErrors ?? {};
+    return {
+      ...chatState,
+      decryptionErrors: remaining,
+    };
+  });
+}
+
+/**
+ * Clear all decryption errors for a chat.
+ */
+export function clearDecryptionErrors(
+  global: any,
+  chatId: string,
+): any {
+  return setChatEncryptionState(global, chatId, (chatState) => ({
+    ...chatState,
+    decryptionErrors: {},
+  }));
+}
+
+/**
+ * Select decryption error entries for a chat.
+ */
+export function selectDecryptionErrors(
+  global: { telebridge: TeleBridgeState },
+  chatId: string,
+): Record<string, DecryptionErrorEntry> {
+  return selectChatEncryptionState(global, chatId)?.decryptionErrors ?? {};
+}
+
+/**
+ * Select a specific decryption error for a message.
+ */
+export function selectMessageDecryptionError(
+  global: { telebridge: TeleBridgeState },
+  chatId: string,
+  messageId: string,
+): DecryptionErrorEntry | undefined {
+  return selectDecryptionErrors(global, chatId)[messageId];
+}
+
+// ---------- Key Exchange Timeout State ----------
+
+/** Key exchange timeout info stored in chat encryption state. */
+export interface KeyExchangeTimeoutInfo {
+  /** Timestamp when key exchange started. */
+  readonly startedAt: number;
+  /** Timeout duration in milliseconds. */
+  readonly timeoutMs: number;
+  /** Whether the key exchange has timed out. */
+  readonly hasTimedOut: boolean;
 }

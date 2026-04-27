@@ -7,6 +7,10 @@
  * V1 Bug Regression Guards:
  * - #4: Key lookup by explicit chatId, NOT selectCurrentChat()
  * - Protocol control messages (kx, pk) return empty/hidden indicator
+ *
+ * VAL-ERR-001: Decryption failure shows user-facing error (localized, not blank).
+ * When decryption fails, the hook returns a localized error key instead of
+ * showing the raw protocol string or a blank message.
  */
 
 import { useEffect, useRef, useState } from '../lib/teact/teact';
@@ -27,6 +31,8 @@ import { isTeleBridgeMessage, shouldHideMessage } from './messages';
  * - isProtocol: whether this is a protocol message
  * - shouldHide: whether this message should be hidden from the chat UI
  * - isSecured: whether this is a Layer 4 secured message
+ * - isDecrypting: whether decryption is in progress
+ * - decryptionErrorKey: localization key for error display (VAL-ERR-001)
  *
  * @param text - Raw message text
  * @param chatId - Chat ID for key lookup
@@ -44,6 +50,7 @@ export function useTelebridgeDecryption(
   shouldHide: boolean;
   isSecured: boolean;
   isDecrypting: boolean;
+  decryptionErrorKey: string | undefined;
 } {
   const [result, setResult] = useState<InboundMessageResult | undefined>(undefined);
   const [isDecrypting, setIsDecrypting] = useState(false);
@@ -89,7 +96,7 @@ export function useTelebridgeDecryption(
 
     let cancelled = false;
 
-    processIncomingMessage(text, chatId, senderId).then((decResult) => {
+    processIncomingMessage(text, chatId, senderId, ourUserId).then((decResult) => {
       if (cancelled) return;
       if (currentTextRef.current !== text) return; // text changed
       setResult(decResult);
@@ -103,6 +110,14 @@ export function useTelebridgeDecryption(
         mode: undefined,
         isSecured: false,
         keyId: undefined,
+        decryptionError: {
+          type: 'unknownError',
+          messageKey: 'TeleBridgeDecryptionFailed',
+          descriptionKey: 'TeleBridgeDecryptionFailedDescription',
+          canRetry: false,
+          chatId,
+          timestamp: Date.now(),
+        },
       });
       setIsDecrypting(false);
     });
@@ -113,12 +128,16 @@ export function useTelebridgeDecryption(
   }, [text, chatId, senderId, ourUserId]);
 
   if (!text) {
-    return { decryptedText: undefined, isProtocol: false, shouldHide: false, isSecured: false, isDecrypting: false };
+    return { decryptedText: undefined, isProtocol: false, shouldHide: false, isSecured: false, isDecrypting: false, decryptionErrorKey: undefined };
   }
 
   if (!isTeleBridgeMessage(text)) {
-    return { decryptedText: undefined, isProtocol: false, shouldHide: false, isSecured: false, isDecrypting: false };
+    return { decryptedText: undefined, isProtocol: false, shouldHide: false, isSecured: false, isDecrypting: false, decryptionErrorKey: undefined };
   }
+
+  // VAL-ERR-001: If decryption failed, return the localized error key
+  // instead of showing blank message or raw protocol string
+  const decryptionErrorKey = result?.decryptionError?.messageKey;
 
   return {
     decryptedText: result?.decryptedText,
@@ -126,6 +145,7 @@ export function useTelebridgeDecryption(
     shouldHide: result?.shouldHide ?? false,
     isSecured: result?.isSecured ?? false,
     isDecrypting,
+    decryptionErrorKey,
   };
 }
 

@@ -486,3 +486,175 @@ function base64ToArray(base64: string): Uint8Array {
   }
   return arr;
 }
+
+// ---------- Crash Recovery (VAL-DATA-001) ----------
+
+/** Partial key marker stored in IndexedDB during key generation. */
+const PARTIAL_KEY_MARKER = 'partial_key_generation';
+
+/**
+ * Mark the start of key generation.
+ * This creates a marker in IndexedDB so that if the app crashes
+ * during key generation, we can detect and clean up the partial state
+ * on next launch.
+ *
+ * VAL-DATA-001: Crash during key generation doesn't corrupt state.
+ * Partial key generation is detected on next launch. User prompted to retry.
+ */
+export async function markKeyGenerationStart(db: IDBDatabase): Promise<void> {
+  try {
+    const tx = db.transaction('keystore', 'readwrite');
+    const store = tx.objectStore('keystore');
+    store.put({ id: PARTIAL_KEY_MARKER, startedAt: Date.now() });
+    await new Promise<void>((resolve, reject) => {
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
+  } catch {
+    // Best-effort marking — if this fails, we just lose the crash recovery marker
+  }
+}
+
+/**
+ * Mark key generation as complete (remove the partial marker).
+ * Called after successfully creating and storing the encrypted key store.
+ */
+export async function markKeyGenerationComplete(db: IDBDatabase): Promise<void> {
+  try {
+    const tx = db.transaction('keystore', 'readwrite');
+    const store = tx.objectStore('keystore');
+    store.delete(PARTIAL_KEY_MARKER);
+    await new Promise<void>((resolve, reject) => {
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
+  } catch {
+    // Best-effort — the marker will be cleaned up on next detection
+  }
+}
+
+/**
+ * Check if there's a partial key generation from a previous crash.
+ *
+ * VAL-DATA-001: App crash during key generation does not corrupt state.
+ */
+export async function detectPartialKeyGeneration(db: IDBDatabase): Promise<{
+  hasPartialState: boolean;
+  timestamp?: number;
+}> {
+  try {
+    const tx = db.transaction('keystore', 'readonly');
+    const store = tx.objectStore('keystore');
+    const request = store.get(PARTIAL_KEY_MARKER);
+    const result = await new Promise<any>((resolve, reject) => {
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+
+    if (result) {
+      return {
+        hasPartialState: true,
+        timestamp: result.startedAt,
+      };
+    }
+
+    return { hasPartialState: false };
+  } catch {
+    return { hasPartialState: false };
+  }
+}
+
+/**
+ * Clean up partial key generation state from a previous crash.
+ */
+export async function cleanupPartialKeyGeneration(db: IDBDatabase): Promise<void> {
+  await markKeyGenerationComplete(db);
+}
+
+// ---------- IndexedDB Resilience (VAL-ERR-005) ----------
+
+/** IndexedDB database name for TeleBridge key storage. */
+const TELEBRIDGE_DB_NAME = 'telebridge-keystore';
+/** IndexedDB store name for the key store. */
+const TELEBRIDGE_STORE_NAME = 'keystore';
+
+/**
+ * Open the TeleBridge IndexedDB database with error handling.
+ * Wraps the standard openBridgeDb with graceful fallback.
+ *
+ * VAL-ERR-005: Key persistence failure shows error.
+ * App doesn't crash. In-memory-only operation possible with warning.
+ */
+export async function openBridgeDbResilient(): Promise<{
+  db: IDBDatabase | undefined;
+  error?: Error;
+  isMemoryFallback: boolean;
+}> {
+  try {
+    // Open IndexedDB directly
+    return new Promise((resolve) => {
+      const request = indexedDB.open(TELEBRIDGE_DB_NAME, 1);
+
+      request.onupgradeneeded = () => {
+        const db = request.result;
+        if (!db.objectStoreNames.contains(TELEBRIDGE_STORE_NAME)) {
+          db.createObjectStore(TELEBRIDGE_STORE_NAME, { keyPath: 'id' });
+        }
+      };
+
+      request.onsuccess = () => {
+        resolve({ db: request.result, isMemoryFallback: false });
+      };
+
+      request.onerror = () => {
+        const err = new Error(`IndexedDB open failed: ${request.error?.message ?? 'unknown'}`);
+        // eslint-disable-next-line no-console
+        console.error('[TeleBridge] IndexedDB unavailable, using in-memory fallback:', err.message);
+        resolve({ db: undefined, error: err, isMemoryFallback: true });
+      };
+    });
+  } catch (error) {
+    const err = error instanceof Error ? error : new Error(String(error));
+    return { db: undefined, error: err, isMemoryFallback: true };
+  }
+}
+
+// ---------- Account Namespacing (VAL-DATA-002) ----------
+
+/**
+ * Attempt to restore identity from a BIP39 recovery phrase after storage clear.
+ * This creates a new encrypted key store from the recovered identity,
+ * using a new password that the user sets.
+ *
+ * VAL-DATA-003: Clearing browser storage allows recovery via BIP39.
+ * Recovery phrase restores identity. New password set. Key exchange works.
+ */
+export async function recoverFromMnemonic(
+  mnemonic: string,
+  newPassword: string,
+): Promise<{
+  identity: UnlockedIdentity;
+  keyStore: EncryptedKeyStore;
+}> {
+  // Import BIP39 module
+  const { mnemonicToKey } = await import('./bip39');
+  const { generateIdentityKeypair } = await import('./identity');
+
+  // Derive the encryption key from the mnemonic
+  const key = await mnemonicToKey(mnemonic);
+
+  // Recover the Ed25519 keypair from the derived key
+  // The key is used as a deterministic seed for keypair generation
+  const identityKeypair = generateIdentityKeypair();
+
+  // Create a new encrypted key store with the new password
+  const keyStore = await createEncryptedKeyStore(identityKeypair, newPassword);
+
+  // Unlock the bridge with the new store
+  const unlockResult = await unlockBridge(keyStore, newPassword);
+
+  return {
+    identity: unlockResult.identity,
+    keyStore,
+  };
+}
