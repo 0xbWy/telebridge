@@ -12,11 +12,10 @@ import {
   selectIsBridgeUnlocked,
   selectTeleBridgeIdentity,
 } from '../../global/selectors/telebridge';
+import buildClassName from '../../util/buildClassName';
 
 import useLang from '../../hooks/useLang';
 import useLastCallback from '../../hooks/useLastCallback';
-
-import buildClassName from '../../util/buildClassName';
 
 import styles from './IdentityQr.module.scss';
 

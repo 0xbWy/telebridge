@@ -8,11 +8,9 @@
 import { memo } from '../../lib/teact/teact';
 import { getActions, withGlobal } from '../../global';
 
-import type { ActionReturnType } from '../../global/types';
-
 import {
-  selectHasGroupKeyChangeWarning,
   selectGroupKeyChangeUserIds,
+  selectHasGroupKeyChangeWarning,
   selectIsBridgeUnlocked,
 } from '../../global/selectors/telebridge';
 

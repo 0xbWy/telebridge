@@ -12,10 +12,9 @@ import {
   selectHasReducedSecurity,
   selectIsBridgeUnlocked,
 } from '../../global/selectors/telebridge';
+import buildClassName from '../../util/buildClassName';
 
 import useLang from '../../hooks/useLang';
-
-import buildClassName from '../../util/buildClassName';
 
 import styles from './ReducedSecurityWarning.module.scss';
 
@@ -53,7 +52,10 @@ const ReducedSecurityWarning = ({
         </div>
         {unencryptedMemberIds && unencryptedMemberIds.length > 0 && (
           <div className={styles.memberList}>
-            <div className={styles.memberLabel}>{lang('TeleBridgeGroupUnencryptedMembers')}:</div>
+            <div className={styles.memberLabel}>
+              {lang('TeleBridgeGroupUnencryptedMembers')}
+              :
+            </div>
             {unencryptedMemberIds.map((memberId) => (
               <div key={memberId} className={styles.memberId}>{memberId}</div>
             ))}

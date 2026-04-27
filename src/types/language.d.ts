@@ -2280,6 +2280,8 @@ export interface LangPair {
   'TeleBridgeShowIdentityQR': undefined;
   'TeleBridgeCopyFingerprint': undefined;
   'TeleBridgeFingerprintCopied': undefined;
+  'TeleBridgeUnverified': undefined;
+  'TeleBridgeVerificationUnknown': undefined;
 }
 
 export interface LangPairWithVariables<V = LangVariable> {

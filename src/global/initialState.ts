@@ -106,6 +106,7 @@ const INITIAL_TELEBRIDGE_STATE = {
   bridgeState: 'locked' as const,
   chatEncryptionStates: {},
   tofuAutoAcceptEnabled: true,
+  contactVerificationStates: {},
 };
 
 export const INITIAL_GLOBAL_STATE: GlobalState = {

@@ -11,16 +11,15 @@ import { getActions, withGlobal } from '../../global';
 import type { ContactVerificationEntry } from '../../telebridge/state';
 
 import {
-  selectAllVerifiedContacts,
-  selectAllUnverifiedContacts,
   selectAllUnknownContacts,
+  selectAllUnverifiedContacts,
+  selectAllVerifiedContacts,
   selectIsBridgeUnlocked,
 } from '../../global/selectors/telebridge';
+import buildClassName from '../../util/buildClassName';
 
 import useLang from '../../hooks/useLang';
 import useLastCallback from '../../hooks/useLastCallback';
-
-import buildClassName from '../../util/buildClassName';
 
 import styles from './ContactList.module.scss';
 
@@ -35,7 +34,11 @@ interface StateProps {
   isBridgeUnlocked: boolean;
 }
 
-const VERIFICATION_BADGE: Record<string, { emoji: string; label: string; className: string }> = {
+const VERIFICATION_BADGE: Record<'verified' | 'unverified' | 'unknown', {
+  emoji: string;
+  label: 'TeleBridgeVerified' | 'TeleBridgeUnverified' | 'TeleBridgeVerificationUnknown';
+  className: string;
+}> = {
   verified: { emoji: '✅', label: 'TeleBridgeVerified', className: styles.badgeVerified },
   unverified: { emoji: '⚠️', label: 'TeleBridgeUnverified', className: styles.badgeUnverified },
   unknown: { emoji: '❓', label: 'TeleBridgeVerificationUnknown', className: styles.badgeUnknown },
@@ -165,15 +168,21 @@ const ContactRow = memo(({ contact, status, onVerify, onUnverify }: ContactRowPr
         <div className={styles.meta}>
           {contact.keyChangeCount > 0 && (
             <span className={styles.keyChangeCount}>
-              {lang('TeleBridgeContactKeyChanged')} ({contact.keyChangeCount})
+              {lang('TeleBridgeContactKeyChanged')}
+              {' '}
+              (
+              {contact.keyChangeCount}
+              )
             </span>
           )}
           {contact.isTofuAccepted && status === 'unknown' && (
             <span className={styles.tofuLabel}>{lang('TeleBridgeContactAutoAccepted')}</span>
           )}
-          {contact.lastVerifiedAt && status === 'verified' && (
+          {Boolean(contact.lastVerifiedAt) && status === 'verified' && (
             <span className={styles.verifiedAt}>
-              {lang('TeleBridgeContactVerifiedAt')}: {new Date(contact.lastVerifiedAt).toLocaleDateString()}
+              {lang('TeleBridgeContactVerifiedAt')}
+              :
+              {new Date(contact.lastVerifiedAt).toLocaleDateString()}
             </span>
           )}
         </div>

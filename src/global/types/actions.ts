@@ -3212,6 +3212,15 @@ export interface ActionPayloads {
   telebridgeGroupMemberJoin: { chatId: string; memberId: string };
   telebridgeGroupMemberLeave: { chatId: string; memberId: string };
   telebridgeSetGroupEncryptionStatus: { chatId: string; status: string };
+  telebridgeGenerateIdentityQr: undefined;
+  telebridgeVerifyContactQr: { userId: string; scannedUri: string };
+  telebridgeVerifyContactManual: { userId: string };
+  telebridgeUnverifyContact: { userId: string };
+  telebridgeInitContact: { userId: string; fingerprint: string };
+  telebridgeSetGroupKeyChangeWarning: { chatId: string; hasWarning: boolean; changedUserIds: string[] };
+  telebridgeClearGroupKeyChangeWarning: { chatId: string; userId: string };
+  telebridgeSetReducedSecurity: { chatId: string; hasReducedSecurity: boolean };
+  telebridgeDemoteContactOnKeyChange: { userId: string; chatId: string; newFingerprint: string };
 }
 
 export interface RequiredActionPayloads {

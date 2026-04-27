@@ -10,7 +10,7 @@
  * - 'unknown': No verification has been performed (TOFU auto-accepted)
  */
 
-import { computeFingerprint, type QrVerificationResult, verifyQrFingerprint } from './identityQr';
+import { type QrVerificationResult, verifyQrFingerprint } from './identityQr';
 
 // ---------- Types ----------
 

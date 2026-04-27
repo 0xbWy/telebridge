@@ -11,8 +11,7 @@
  * - Fallback for unencrypted groups (no Sender Key operations, no encryption UI)
  */
 
-import type { ContactVerificationStatus } from '../identity/contactVerification';
-import type { GroupEncryptionStatus, MemberEncryptionStatus } from './groupState';
+import type { GroupEncryptionStatus } from './groupState';
 
 // ---------- Key Change Detection Types ----------
 

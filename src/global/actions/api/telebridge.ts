@@ -7,7 +7,9 @@
  */
 
 import type { EncryptedKeyStore } from '../../../telebridge/crypto/persistence';
-import type { ContactVerificationStatus, EncryptionStatus, GroupEncryptionStatus, KeyExchangeState } from '../../../telebridge/state';
+import type {
+  ContactVerificationEntry, EncryptionStatus, GroupEncryptionStatus, KeyExchangeState,
+} from '../../../telebridge/state';
 import type { ActionReturnType } from '../../types';
 
 import {
@@ -40,10 +42,11 @@ import {
   setGroupEncryptionStatus as setGroupEncryptionStatusReducer,
   setGroupKeyChangeWarning,
   setIsGroupChat,
-  setReducedSecurity,
   setRecoveryPhraseVerified,
+  setReducedSecurity,
   setTofuAutoAccepted,
   setTofuAutoAcceptEnabled,
+  updateTeleBridgeState,
 } from '../../reducers/telebridge';
 
 // ---------- Bridge Password Setup ----------
@@ -605,7 +608,7 @@ function base64ToArray(base64: string): Uint8Array {
 addActionHandler('telebridgeGenerateIdentityQr', (global): ActionReturnType => {
   const state = global.telebridge;
   if (!state?.ed25519PublicKey) return global;
-
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { computeFingerprint, generateVerificationUri } = require(
     '../../../telebridge/identity/identityQr',
   ) as typeof import('../../../telebridge/identity/identityQr');
@@ -664,7 +667,7 @@ addActionHandler('telebridgeVerifyContactQr', (global, actions, payload): Action
         global = setContactFingerprint(global, userId, parsed.fingerprint);
 
         // Set key change warnings in all encrypted chats with this contact
-        // eslint-disable-next-line @typescript-eslint/no-require-imports
+
         const contactChats = Object.entries(global.telebridge?.chatEncryptionStates ?? {})
           .filter(([, chatState]) => chatState.keyExchangeState === 'complete')
           .map(([chatId]) => chatId);

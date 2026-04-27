@@ -3058,3 +3058,5 @@
 "TeleBridgeShowIdentityQR" = "Show Identity QR Code";
 "TeleBridgeCopyFingerprint" = "Copy Fingerprint";
 "TeleBridgeFingerprintCopied" = "Fingerprint copied to clipboard";
+"TeleBridgeUnverified" = "Unverified";
+"TeleBridgeVerificationUnknown" = "Verification unknown";
