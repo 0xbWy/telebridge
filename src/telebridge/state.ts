@@ -10,6 +10,9 @@
 /** Per-chat encryption status (5 states for the indicator emoji). */
 export type EncryptionStatus = 'encrypted' | 'notEncrypted' | 'verified' | 'keyChanged' | 'secured';
 
+/** Group encryption status — reflects the overall state of encryption in a group. */
+export type GroupEncryptionStatus = 'locked' | 'warning' | 'transitional' | 'notEncrypted';
+
 /** Key exchange states for a chat. */
 export type KeyExchangeState = 'idle' | 'inProgress' | 'complete' | 'failed';
 
@@ -36,6 +39,10 @@ export interface ChatEncryptionState {
   lastKeyExchangeAt?: number;
   /** Number of messages sent with current key. */
   messageCount?: number;
+  /** Whether this is a group chat with encryption. */
+  isGroupChat?: boolean;
+  /** Group encryption status (for group chats). */
+  groupEncryptionStatus?: GroupEncryptionStatus;
 }
 
 // ---------- Bridge State Types ----------
@@ -142,6 +149,20 @@ export function selectHasEstablishedChatKey(
   if (!state) return false;
   return state.keyExchangeState === 'complete'
     && (state.status === 'encrypted' || state.status === 'verified' || state.status === 'secured');
+}
+
+export function selectGroupEncryptionStatus(
+  global: { telebridge: TeleBridgeState },
+  chatId: string,
+): GroupEncryptionStatus | undefined {
+  return selectChatEncryptionState(global, chatId)?.groupEncryptionStatus;
+}
+
+export function selectIsGroupChat(
+  global: { telebridge: TeleBridgeState },
+  chatId: string,
+): boolean {
+  return selectChatEncryptionState(global, chatId)?.isGroupChat ?? false;
 }
 
 export function selectShouldShowStartEncryptedBanner(
@@ -330,5 +351,28 @@ export function setTofuAutoAcceptEnabled(global: any, enabled: boolean): any {
   return updateTeleBridgeState(global, (state) => ({
     ...state,
     tofuAutoAcceptEnabled: enabled,
+  }));
+}
+
+export function setGroupEncryptionStatus(
+  global: any,
+  chatId: string,
+  groupStatus: GroupEncryptionStatus,
+): any {
+  return setChatEncryptionState(global, chatId, (chatState) => ({
+    ...chatState,
+    isGroupChat: true,
+    groupEncryptionStatus: groupStatus,
+  }));
+}
+
+export function setIsGroupChat(
+  global: any,
+  chatId: string,
+  isGroup: boolean,
+): any {
+  return setChatEncryptionState(global, chatId, (chatState) => ({
+    ...chatState,
+    isGroupChat: isGroup,
   }));
 }

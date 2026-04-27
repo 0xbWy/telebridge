@@ -44,8 +44,8 @@ import {
   shouldRotateChatKey,
 } from './messages';
 
-// Re-export for external consumers (like Composer.tsx)
-export { hasChatKey, setChatKey } from './messages';
+// Re-exports for external consumers (like Composer.tsx)
+export { hasChatKey, setChatKey, isTeleBridgeMessage } from './messages';
 
 // ---------- Types ----------
 
@@ -523,6 +523,10 @@ export function isEncryptToSelfDuplicate(
 export function lockMessagePipeline(): void {
   clearAllChatKeys();
   recipientX25519PublicKeys.clear();
+  // Clear group encryption keys
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const groupState = require('./group/groupState') as typeof import('./group/groupState');
+  groupState.clearAllGroupEncryption();
 }
 
 // ---------- Recipient X25519 Public Key Store ----------
@@ -834,4 +838,145 @@ function hexToBytes(hex: string): Uint8Array {
     bytes[i / 2] = parseInt(hex.substr(i, 2), 16);
   }
   return bytes;
+}
+
+// ---------- Group Message Processing ----------
+
+/**
+ * Check if a message is a group encrypted message.
+ * Group messages use the 'g' mode in the protocol format: tb1.g.<base64>
+ */
+function isGroupTeleBridgeMessage(text: string): boolean {
+  return typeof text === 'string' && text.startsWith('tb1.g.');
+}
+
+/**
+ * Result of processing a group encrypted message.
+ */
+export interface GroupMessageResult {
+  /** Whether the message was a TeleBridge group message. */
+  readonly isGroupMessage: boolean;
+  /** Decrypted text (if decryption succeeded). */
+  readonly decryptedText: string | undefined;
+  /** Sender's member ID. */
+  readonly senderId: string | undefined;
+  /** Group ID. */
+  readonly groupId: string | undefined;
+  /** Whether the sender's signature was verified. */
+  readonly isSignatureValid: boolean;
+  /** Whether this message should be hidden from UI (control message). */
+  readonly shouldHide: boolean;
+}
+
+/**
+ * Process an incoming group message.
+ * Detects tb1.g.<base64> messages and decrypts them using the
+ * distributed sender key for the message sender.
+ *
+ * @param text - Raw message text from Telegram
+ * @param groupId - Group chat ID for key lookup
+ * @param senderId - Sender's user ID for sender key lookup
+ * @returns Group message result
+ */
+export async function processIncomingGroupMessage(
+  text: string,
+  groupId: string,
+  senderId: string,
+): Promise<GroupMessageResult> {
+  // Not a group message — pass through
+  if (!isGroupTeleBridgeMessage(text)) {
+    return {
+      isGroupMessage: false,
+      decryptedText: undefined,
+      senderId: undefined,
+      groupId: undefined,
+      isSignatureValid: false,
+      shouldHide: false,
+    };
+  }
+
+  // Get the distributed sender key for this sender in this group
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const groupState = require('./group/groupState') as typeof import('./group/groupState');
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const groupEnc = require('./group/groupEncryption') as typeof import('./group/groupEncryption');
+
+  const distKey = groupState.getDistributedSenderKey(groupId, senderId);
+  if (!distKey) {
+    return {
+      isGroupMessage: true,
+      decryptedText: undefined,
+      senderId,
+      groupId,
+      isSignatureValid: false,
+      shouldHide: false,
+    };
+  }
+
+  try {
+    const result = await groupEnc.decryptGroupMessage(text, distKey);
+    return {
+      isGroupMessage: true,
+      decryptedText: result.text,
+      senderId: result.senderId,
+      groupId: result.groupId,
+      isSignatureValid: result.isSignatureValid,
+      shouldHide: false,
+    };
+  } catch {
+    // eslint-disable-next-line no-console
+    console.error('[TeleBridge] Group message decryption failed');
+    return {
+      isGroupMessage: true,
+      decryptedText: undefined,
+      senderId,
+      groupId,
+      isSignatureValid: false,
+      shouldHide: false,
+    };
+  }
+}
+
+/**
+ * Process an outgoing group message for encryption.
+ * Uses the sender's own Sender Key to encrypt the message.
+ *
+ * @param text - Plaintext text to encrypt
+ * @param groupId - Group chat ID
+ * @param memberId - Our member ID
+ * @returns Encrypted group message, or original text if encryption not available
+ */
+export async function processOutgoingGroupMessage(
+  text: string,
+  groupId: string,
+  memberId: string,
+): Promise<{ wasEncrypted: boolean; text: string; chainIndex: number }> {
+  // Already a protocol message — don't re-encrypt
+  if (isTeleBridgeMessage(text)) {
+    return { wasEncrypted: false, text, chainIndex: 0 };
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const groupState = require('./group/groupState') as typeof import('./group/groupState');
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const groupEnc = require('./group/groupEncryption') as typeof import('./group/groupEncryption');
+
+  // Get our own sender key for this group
+  const senderKey = groupState.getOwnGroupSenderKey(groupId, memberId);
+  if (!senderKey) {
+    return { wasEncrypted: false, text, chainIndex: 0 };
+  }
+
+  try {
+    const result = await groupEnc.encryptGroupMessage(text, senderKey);
+    return {
+      wasEncrypted: true,
+      text: result.protocolMessage,
+      chainIndex: result.chainIndex,
+    };
+  } catch {
+    // eslint-disable-next-line no-console
+    console.error('[TeleBridge] Group message encryption failed');
+    throw new Error('Group message encryption failed');
+  }
 }

@@ -7,7 +7,7 @@
  */
 
 import type { EncryptedKeyStore } from '../../../telebridge/crypto/persistence';
-import type { EncryptionStatus, KeyExchangeState } from '../../../telebridge/state';
+import type { EncryptionStatus, GroupEncryptionStatus, KeyExchangeState } from '../../../telebridge/state';
 import type { ActionReturnType } from '../../types';
 
 import {
@@ -34,6 +34,8 @@ import {
   setChatEncryptionStatus as setChatEncryptionStatusReducer,
   setChatKeyExchangeState,
   setDefaultEncryptNewChats,
+  setGroupEncryptionStatus as setGroupEncryptionStatusReducer,
+  setIsGroupChat,
   setRecoveryPhraseVerified,
   setTofuAutoAccepted,
   setTofuAutoAcceptEnabled,
@@ -323,6 +325,204 @@ addActionHandler('telebridgeRotateChatKey', (global, actions, payload): ActionRe
   }
 
   return global;
+});
+
+// ---------- Group Encryption Actions ----------
+
+addActionHandler('telebridgeInitGroupEncryption', (global, actions, payload): ActionReturnType => {
+  const { chatId, memberIds } = payload;
+
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const groupState = require(
+    '../../../telebridge/group/groupState',
+  ) as typeof import('../../../telebridge/group/groupState');
+
+  // Initialize group encryption state
+  groupState.initGroupEncryptionState(chatId, memberIds);
+
+  // Mark as group chat in global state
+  global = setIsGroupChat(global, chatId, true);
+
+  // Set initial group encryption status
+  const status = groupState.getGroupEncryptionStatus(chatId);
+  global = setGroupEncryptionStatusReducer(global, chatId, status as GroupEncryptionStatus);
+
+  return global;
+});
+
+addActionHandler('telebridgeGenerateGroupSenderKey', (global, actions, payload): ActionReturnType => {
+  const { chatId, memberId } = payload;
+
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const groupState = require(
+    '../../../telebridge/group/groupState',
+  ) as typeof import('../../../telebridge/group/groupState');
+
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const persistence = require(
+    '../../../telebridge/crypto/persistence',
+  ) as typeof import('../../../telebridge/crypto/persistence');
+
+  // Get identity key for uniqueness
+  const identity = persistence.getUnlockedIdentity();
+  const identitySigningKey = identity?.ed25519.signingBytes;
+
+  // Generate own sender key for this group
+  groupState.generateGroupSenderKey(chatId, memberId, identitySigningKey);
+
+  // Update group encryption status
+  const status = groupState.getGroupEncryptionStatus(chatId);
+  global = getGlobal();
+  global = setGroupEncryptionStatusReducer(global, chatId, status as GroupEncryptionStatus);
+
+  return global;
+});
+
+addActionHandler('telebridgeDistributeGroupSenderKey', (global, actions, payload): ActionReturnType => {
+  const { chatId, memberId } = payload;
+
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const groupState = require(
+    '../../../telebridge/group/groupState',
+  ) as typeof import('../../../telebridge/group/groupState');
+
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const senderKey = require(
+    '../../../telebridge/group/senderKey',
+  ) as typeof import('../../../telebridge/group/senderKey');
+
+  // Get our own sender key for this group
+  const ownKey = groupState.getOwnGroupSenderKey(chatId, memberId);
+  if (!ownKey) {
+    // No own key — must generate first
+    return global;
+  }
+
+  // Create a distributed version (without signing key) for sharing
+  const distKey = senderKey.createDistributedSenderKey(ownKey);
+
+  // Serialize for transport via 1-on-1 encrypted channel
+  senderKey.serializeSenderKey(distKey);
+
+  // In a real implementation, we would encrypt this with the pairwise chat key
+  // and send it as a tb1.kx.<base64> message to each member.
+  // For now, we just mark the distribution as done in the group state.
+  // TODO: Send serialized.payload to each member via pairwise channel
+
+  // Update status
+  const status = groupState.getGroupEncryptionStatus(chatId);
+  global = getGlobal();
+  global = setGroupEncryptionStatusReducer(
+    global, chatId, status as GroupEncryptionStatus,
+  );
+
+  return global;
+});
+
+addActionHandler('telebridgeStoreGroupSenderKey', (global, actions, payload): ActionReturnType => {
+  const { chatId, senderMemberId, keyPayloadBase64 } = payload;
+
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const groupState = require(
+    '../../../telebridge/group/groupState',
+  ) as typeof import('../../../telebridge/group/groupState');
+
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const senderKey = require(
+    '../../../telebridge/group/senderKey',
+  ) as typeof import('../../../telebridge/group/senderKey');
+
+  // Decode the key payload from base64
+  const payloadBytes = base64ToArray(keyPayloadBase64);
+
+  // Deserialize the distributed sender key
+  const distKey = senderKey.deserializeSenderKey(payloadBytes);
+
+  // Verify the key ID
+  if (!senderKey.verifySenderKeyId(distKey)) {
+    // Invalid key — don't store
+    return global;
+  }
+
+  // Store in the group state
+  groupState.storeDistributedSenderKey(distKey);
+
+  // Update encryption status
+  const status = groupState.getGroupEncryptionStatus(chatId);
+  global = getGlobal();
+  global = setGroupEncryptionStatusReducer(
+    global, chatId, status as GroupEncryptionStatus,
+  );
+
+  // Mark pairwise key as complete for this member
+  groupState.setGroupPairwiseKeyComplete(chatId, senderMemberId);
+
+  return global;
+});
+
+addActionHandler('telebridgeGroupMemberJoin', (global, actions, payload): ActionReturnType => {
+  const { chatId, memberId } = payload;
+
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const groupState = require(
+    '../../../telebridge/group/groupState',
+  ) as typeof import('../../../telebridge/group/groupState');
+
+  // Add the new member to the group state
+  groupState.addGroupMember(chatId, memberId);
+
+  // The new member cannot decrypt pre-join messages because they
+  // won't have the old Sender Keys — this is by design (forward secrecy).
+
+  // Update encryption status
+  const status = groupState.getGroupEncryptionStatus(chatId);
+  global = getGlobal();
+  global = setGroupEncryptionStatusReducer(
+    global, chatId, status as GroupEncryptionStatus,
+  );
+
+  return global;
+});
+
+addActionHandler('telebridgeGroupMemberLeave', (global, actions, payload): ActionReturnType => {
+  const { chatId, memberId } = payload;
+
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const groupState = require(
+    '../../../telebridge/group/groupState',
+  ) as typeof import('../../../telebridge/group/groupState');
+
+  // Start re-keying — all remaining members must regenerate Sender Keys
+  groupState.startGroupRekeying(chatId);
+
+  // Remove the departed member from the group state
+  groupState.removeGroupMember(chatId, memberId);
+
+  // Update encryption status to transitional
+  global = getGlobal();
+  global = setGroupEncryptionStatusReducer(
+    global, chatId, 'transitional' as GroupEncryptionStatus,
+  );
+
+  // In a real implementation, we would:
+  // 1. Regenerate our own Sender Key for this group
+  // 2. Distribute the new key to remaining members via pairwise channels
+  // 3. Old Sender Keys are deleted — departed member cannot decrypt new messages
+
+  // For now, update status to reflect the re-keying
+  const status = groupState.getGroupEncryptionStatus(chatId);
+  global = setGroupEncryptionStatusReducer(
+    global, chatId, status as GroupEncryptionStatus,
+  );
+
+  return global;
+});
+
+addActionHandler('telebridgeSetGroupEncryptionStatus', (global, actions, payload): ActionReturnType => {
+  const { chatId, status } = payload;
+  return setGroupEncryptionStatusReducer(
+    global, chatId, status as GroupEncryptionStatus,
+  );
 });
 
 // ---------- Helper: IndexedDB ----------

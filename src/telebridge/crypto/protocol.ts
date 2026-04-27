@@ -24,10 +24,10 @@ export const PROTOCOL_VERSION = 1;
 export const PROTOCOL_PREFIX = 'tb';
 
 /** Valid message modes. */
-export type ProtocolMode = 's' | 'a' | 'kx' | 'pk';
+export type ProtocolMode = 's' | 'a' | 'g' | 'kx' | 'pk';
 
 /** Set of valid modes for fast lookup. */
-const VALID_MODES = new Set<string>(['s', 'a', 'kx', 'pk']);
+const VALID_MODES = new Set<string>(['s', 'a', 'g', 'kx', 'pk']);
 
 /**
  * Maximum Telegram message length in characters.
@@ -152,7 +152,7 @@ export function encodeProtocolText(
 export interface ProtocolMessage {
   /** Protocol version number. */
   readonly version: number;
-  /** Message mode ('s', 'a', 'kx', 'pk'). */
+  /** Message mode ('s', 'a', 'g', 'kx', 'pk'). */
   readonly mode: ProtocolMode;
   /** Binary payload (decoded from base64). */
   readonly payload: Uint8Array;
@@ -198,7 +198,7 @@ export function decodeProtocol(message: string): ProtocolMessage | undefined {
     // Two-character mode
     mode = afterVersion.slice(0, 2);
     payloadBase64 = afterVersion.slice(3);
-  } else if (afterVersion.startsWith('s.') || afterVersion.startsWith('a.')) {
+  } else if (afterVersion.startsWith('s.') || afterVersion.startsWith('a.') || afterVersion.startsWith('g.')) {
     // Single-character mode
     mode = afterVersion.slice(0, 1);
     payloadBase64 = afterVersion.slice(2);

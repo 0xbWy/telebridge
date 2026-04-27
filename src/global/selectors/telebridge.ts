@@ -4,7 +4,9 @@
  * Pure functions to select from TeleBridge global state.
  */
 
-import type { BridgeState, ChatEncryptionState, EncryptionStatus, TeleBridgeState } from '../../telebridge/state';
+import type {
+  BridgeState, ChatEncryptionState, EncryptionStatus, GroupEncryptionStatus, TeleBridgeState,
+} from '../../telebridge/state';
 
 import { INITIAL_TELEBRIDGE_STATE } from '../../telebridge/state';
 
@@ -90,4 +92,18 @@ export function selectDefaultEncryptNewChats(global: { telebridge?: TeleBridgeSt
 
 export function selectTofuAutoAcceptEnabled(global: { telebridge?: TeleBridgeState }): boolean {
   return selectTeleBridgeState(global).tofuAutoAcceptEnabled ?? true;
+}
+
+export function selectGroupEncryptionStatus(
+  global: { telebridge?: TeleBridgeState },
+  chatId: string,
+): GroupEncryptionStatus | undefined {
+  return selectChatEncryptionState(global, chatId)?.groupEncryptionStatus;
+}
+
+export function selectIsGroupChat(
+  global: { telebridge?: TeleBridgeState },
+  chatId: string,
+): boolean {
+  return selectChatEncryptionState(global, chatId)?.isGroupChat ?? false;
 }

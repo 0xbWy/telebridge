@@ -3205,6 +3205,13 @@ export interface ActionPayloads {
   telebridgeEstablishChatKey: { chatId: string; keyBase64: string };
   telebridgeIncrementMessageCount: { chatId: string };
   telebridgeRotateChatKey: { chatId: string };
+  telebridgeInitGroupEncryption: { chatId: string; memberIds: string[] };
+  telebridgeGenerateGroupSenderKey: { chatId: string; memberId: string };
+  telebridgeDistributeGroupSenderKey: { chatId: string; memberId: string };
+  telebridgeStoreGroupSenderKey: { chatId: string; senderMemberId: string; keyPayloadBase64: string };
+  telebridgeGroupMemberJoin: { chatId: string; memberId: string };
+  telebridgeGroupMemberLeave: { chatId: string; memberId: string };
+  telebridgeSetGroupEncryptionStatus: { chatId: string; status: string };
 }
 
 export interface RequiredActionPayloads {

@@ -5,7 +5,7 @@
  */
 
 import type {
-  BridgeState, ChatEncryptionState, EncryptionStatus, KeyExchangeState, TeleBridgeState,
+  BridgeState, ChatEncryptionState, EncryptionStatus, GroupEncryptionStatus, KeyExchangeState, TeleBridgeState,
 } from '../../telebridge/state';
 
 import { INITIAL_TELEBRIDGE_STATE } from '../../telebridge/state';
@@ -178,5 +178,28 @@ export function setTofuAutoAcceptEnabled(global: any, enabled: boolean): any {
   return updateTeleBridgeState(global, (state) => ({
     ...state,
     tofuAutoAcceptEnabled: enabled,
+  }));
+}
+
+export function setGroupEncryptionStatus(
+  global: any,
+  chatId: string,
+  groupStatus: GroupEncryptionStatus,
+): any {
+  return setChatEncryptionState(global, chatId, (chatState) => ({
+    ...chatState,
+    isGroupChat: true,
+    groupEncryptionStatus: groupStatus,
+  }));
+}
+
+export function setIsGroupChat(
+  global: any,
+  chatId: string,
+  isGroup: boolean,
+): any {
+  return setChatEncryptionState(global, chatId, (chatState) => ({
+    ...chatState,
+    isGroupChat: isGroup,
   }));
 }
