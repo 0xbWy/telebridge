@@ -21,6 +21,12 @@ import {
   unlockBridge,
 } from '../../../telebridge/crypto/persistence';
 import {
+  clearTelebridgeStores,
+  getPrekeyBundle,
+  setPrekeyBundle,
+  setRecipientPubBase64,
+} from '../../../telebridge/stores';
+import {
   addActionHandler, getGlobal, setGlobal,
 } from '../../index';
 import {
@@ -135,7 +141,7 @@ addActionHandler('telebridgeLock', (global): ActionReturnType => {
   // Clear in-memory chat keys when locking
   // V1 Bug #5: no plaintext keys in memory when locked
 
-  // Clear action-level stores first (prekeyBundleStore, recipientX25519PubStore)
+  // Clear action-level stores (prekeyBundleStore, recipientX25519PubStore in stores.ts)
   clearActionLevelStores();
 
   // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -210,31 +216,15 @@ addActionHandler('telebridgeSetRecoveryVerified', (global, actions, payload): Ac
 // ---------- Key Exchange ----------
 
 /**
- * Prekey bundle store for our own signed prekeys.
- * Maps chatId → SignedPrekey so we can complete key exchange as responder.
- */
-const prekeyBundleStore = new Map<string, {
-  bundle: import('../../../telebridge/crypto/keyExchange').PrekeyBundle;
-  consumedOneTimePrekeys: Map<number, import('../../../telebridge/crypto/identity').X25519Keypair>;
-}>();
-
-/**
- * In-memory store for recipient X25519 public keys (base64) per chat.
- * Populated during key exchange initiation from the recipient's prekey bundle.
- */
-const recipientX25519PubStore = new Map<string, string>();
-
-/**
  * Clear module-level stores containing private key material.
  * Called by telebridgeLock action before lockMessagePipeline()
- * to clear stores that are defined in this action module.
+ * to clear stores that are defined in the stores module.
  *
  * This is a security requirement: private key material must not remain
  * in memory when the bridge is locked.
  */
 export function clearActionLevelStores(): void {
-  prekeyBundleStore.clear();
-  recipientX25519PubStore.clear();
+  clearTelebridgeStores();
 }
 
 addActionHandler('telebridgeStartKeyExchange', (global, actions, payload): ActionReturnType => {
@@ -318,7 +308,7 @@ addActionHandler('telebridgeStartKeyExchange', (global, actions, payload): Actio
     msgs.setChatKey(chatId, result.chatDerivedKey);
 
     // Step 4: Store recipient's X25519 public key for future use (secured messages)
-    recipientX25519PubStore.set(chatId, arrayToBase64(verifiedBundle.x25519IdentityPub));
+    setRecipientPubBase64(chatId, arrayToBase64(verifiedBundle.x25519IdentityPub));
     integ.setRecipientX25519PublicKey(chatId, verifiedBundle.x25519IdentityPub);
 
     // Step 5: Prepare tb1.kx message with ephemeral public key + our X25519 identity pub
@@ -413,7 +403,7 @@ addActionHandler('telebridgeCompleteKeyExchange', (global, actions, payload): Ac
     // Look up our own signed prekey for this chat
     // If we have a prekey bundle store entry, use it; otherwise FAIL
     // (Do NOT generate ad-hoc unverifiable prekeys — this is a security requirement)
-    const storedData = prekeyBundleStore.get(chatId);
+    const storedData = getPrekeyBundle(chatId);
     let signedPrekey: import('../../../telebridge/crypto/keyExchange').SignedPrekey;
     let consumedOtpk: import('../../../telebridge/crypto/identity').X25519Keypair | undefined;
 
@@ -499,7 +489,7 @@ addActionHandler('telebridgeGeneratePrekeyBundle', (global, actions, payload): A
     bundle.oneTimePrekeys.forEach((otpk: import('../../../telebridge/crypto/identity').X25519Keypair, i: number) => {
       consumedOneTimePrekeys.set(i, otpk);
     });
-    prekeyBundleStore.set(chatId, { bundle, consumedOneTimePrekeys });
+    setPrekeyBundle(chatId, bundle, consumedOneTimePrekeys);
   } catch {
     // Silently fail — the prekey bundle is not required for basic operation
   }

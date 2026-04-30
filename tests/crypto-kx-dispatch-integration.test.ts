@@ -251,12 +251,9 @@ describe('prekeyBundleStore and recipientX25519PubStore cleared on bridge lock',
   });
 
   it('clearStoresInTelebridgeAction clears prekeyBundleStore', () => {
-    // The telebridge.ts action file has module-level stores (prekeyBundleStore,
-    // recipientX25519PubStore) that must be cleared on bridge lock.
-    // We verify the exported function exists and is callable.
-    // Note: We cannot directly require telebridge.ts in tests due to
-    // BroadcastChannel dependency in the import chain. Instead, we verify
-    // the function exists by checking its type through the integration layer.
+    // The telebridge.ts action file now delegates to stores.ts for
+    // prekeyBundleStore and recipientX25519PubStore. We verify the
+    // stores module clearing works properly.
 
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const integ = require('../src/telebridge/integration') as typeof import('../src/telebridge/integration');
@@ -274,6 +271,86 @@ describe('prekeyBundleStore and recipientX25519PubStore cleared on bridge lock',
 
     integ.clearPrekeyAndRecipientStores();
     expect(integ.getRecipientX25519PublicKey('chat-action-test')).toBeUndefined();
+  });
+});
+
+// ======================================================================
+// Test 3b: Direct stores module test (prekeyBundleStore, recipientPubBase64Store)
+// ======================================================================
+
+describe('TeleBridge stores module: prekeyStore and recipientPubBase64Store', () => {
+  afterEach(() => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const stores = require('../src/telebridge/stores') as typeof import('../src/telebridge/stores');
+    stores.clearTelebridgeStores();
+  });
+
+  it('stores module stores and retrieves prekey bundles', () => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const stores = require('../src/telebridge/stores') as typeof import('../src/telebridge/stores');
+
+    const bobKp = generateIdentityKeypair();
+    const bobBundle = generatePrekeyBundle(bobKp, 5);
+
+    // Initially no bundle
+    expect(stores.hasPrekeyBundle('chat-stores-test')).toBe(false);
+    expect(stores.getPrekeyBundle('chat-stores-test')).toBeUndefined();
+
+    // Store the bundle
+    const consumedOneTimePrekeys = new Map<number, import('../src/telebridge/crypto/identity').X25519Keypair>();
+    bobBundle.oneTimePrekeys.forEach((otpk, i) => {
+      consumedOneTimePrekeys.set(i, otpk);
+    });
+    stores.setPrekeyBundle('chat-stores-test', bobBundle, consumedOneTimePrekeys);
+
+    // Verify it's stored
+    expect(stores.hasPrekeyBundle('chat-stores-test')).toBe(true);
+    const stored = stores.getPrekeyBundle('chat-stores-test');
+    expect(stored).toBeDefined();
+    expect(stored!.bundle).toBe(bobBundle);
+  });
+
+  it('stores module stores and retrieves recipient pub base64', () => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const stores = require('../src/telebridge/stores') as typeof import('../src/telebridge/stores');
+
+    // Initially no key
+    expect(stores.getRecipientPubBase64('chat-pub-test')).toBeUndefined();
+
+    // Store the key
+    const pubBase64 = 'dGVzdGJhc2U2NGVuY29kZWRwdWJrZXk=';
+    stores.setRecipientPubBase64('chat-pub-test', pubBase64);
+
+    // Verify it's stored
+    expect(stores.getRecipientPubBase64('chat-pub-test')).toBe(pubBase64);
+  });
+
+  it('clearTelebridgeStores empties both prekeyStore and recipientPubBase64Store', () => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const stores = require('../src/telebridge/stores') as typeof import('../src/telebridge/stores');
+
+    const bobKp = generateIdentityKeypair();
+    const bobBundle = generatePrekeyBundle(bobKp, 5);
+
+    // Populate both stores
+    const consumedOneTimePrekeys = new Map<number, import('../src/telebridge/crypto/identity').X25519Keypair>();
+    bobBundle.oneTimePrekeys.forEach((otpk, i) => {
+      consumedOneTimePrekeys.set(i, otpk);
+    });
+    stores.setPrekeyBundle('chat-clear-test', bobBundle, consumedOneTimePrekeys);
+    stores.setRecipientPubBase64('chat-clear-test', 'dGVzdA==');
+
+    // Verify populated
+    expect(stores.hasPrekeyBundle('chat-clear-test')).toBe(true);
+    expect(stores.getRecipientPubBase64('chat-clear-test')).toBe('dGVzdA==');
+
+    // Clear
+    stores.clearTelebridgeStores();
+
+    // Verify both are cleared
+    expect(stores.hasPrekeyBundle('chat-clear-test')).toBe(false);
+    expect(stores.getPrekeyBundle('chat-clear-test')).toBeUndefined();
+    expect(stores.getRecipientPubBase64('chat-clear-test')).toBeUndefined();
   });
 });
 
