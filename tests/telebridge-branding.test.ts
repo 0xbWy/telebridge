@@ -1,6 +1,61 @@
 import fs from 'fs';
 import path from 'path';
 
+// Regex to parse .strings files: "Key" = "Value";
+// Handles multi-line values and escaped quotes
+function parseStringsFile(content: string): Record<string, string> {
+  const result: Record<string, string> = {};
+  const lines = content.split('\n');
+  let currentKey = '';
+  let currentValue = '';
+  let inValue = false;
+
+  for (const line of lines) {
+    const keyMatch = line.match(/^"([^"]+)"\s*=\s*"/);
+    if (keyMatch && !inValue) {
+      currentKey = keyMatch[1];
+      // Get everything after the opening quote of the value
+      const valueStart = line.indexOf('=', line.indexOf(currentKey)) + 1;
+      const firstQuote = line.indexOf('"', valueStart);
+      currentValue = line.substring(firstQuote + 1);
+      inValue = true;
+
+      // Check if the value ends on this same line
+      let endIdx = currentValue.length - 1;
+      while (endIdx >= 0 && (currentValue[endIdx] === '\r' || currentValue[endIdx] === '\n')) {
+        endIdx--;
+      }
+      if (endIdx >= 0 && currentValue[endIdx] === ';' && currentValue[endIdx - 1] === '"') {
+        // Value ends on this line
+        currentValue = currentValue.substring(0, endIdx - 1);
+        result[currentKey] = unescapeValue(currentValue);
+        currentKey = '';
+        currentValue = '';
+        inValue = false;
+      }
+    } else if (inValue) {
+      currentValue += '\n' + line;
+      let endIdx = currentValue.length - 1;
+      while (endIdx >= 0 && (currentValue[endIdx] === '\r' || currentValue[endIdx] === '\n')) {
+        endIdx--;
+      }
+      if (endIdx >= 0 && currentValue[endIdx] === ';' && currentValue[endIdx - 1] === '"') {
+        currentValue = currentValue.substring(0, endIdx - 1);
+        result[currentKey] = unescapeValue(currentValue);
+        currentKey = '';
+        currentValue = '';
+        inValue = false;
+      }
+    }
+  }
+
+  return result;
+}
+
+function unescapeValue(val: string): string {
+  return val.replace(/\\n/g, '\n').replace(/\\t/g, '\t').replace(/\\"/g, '"');
+}
+
 describe('TeleBridge Branding', () => {
   const rootDir = path.resolve(__dirname, '..');
 
@@ -134,6 +189,136 @@ describe('TeleBridge Branding', () => {
       it(`${iconPath} should exist`, () => {
         expect(fs.existsSync(path.join(rootDir, iconPath))).toBe(true);
       });
+    });
+  });
+
+  describe('Localization strings — no Telegram Premium in values (VAL-BRAND-007)', () => {
+    const stringsContent = fs.readFileSync(
+      path.join(rootDir, 'src/assets/localization/fallback.strings'), 'utf-8',
+    );
+    const parsed = parseStringsFile(stringsContent);
+
+    it('should have no "Telegram Premium" in any fallback.strings value', () => {
+      const violations: string[] = [];
+      for (const [key, value] of Object.entries(parsed)) {
+        if (value.includes('Telegram Premium')) {
+          violations.push(`"${key}" = "${value}"`);
+        }
+      }
+      expect(violations).toEqual([]);
+    });
+  });
+
+  describe('Localization strings — no user-visible Telegram references (VAL-BRAND-008)', () => {
+    const stringsContent = fs.readFileSync(
+      path.join(rootDir, 'src/assets/localization/fallback.strings'), 'utf-8',
+    );
+    const parsed = parseStringsFile(stringsContent);
+
+    // Patterns that indicate user-visible "Telegram" brand references
+    const userVisiblePatterns: Array<{ pattern: RegExp; description: string }> = [
+      { pattern: /\bjoined Telegram\b/i, description: '"joined Telegram"' },
+      { pattern: /\bon Telegram\b/i, description: '"on Telegram"' },
+      { pattern: /\bTelegram account\b/i, description: '"Telegram account"' },
+      { pattern: /\bTelegram app\b/i, description: '"Telegram app"' },
+      { pattern: /\bTelegram search\b/i, description: '"Telegram search"' },
+      { pattern: /\bin Telegram\b/i, description: '"in Telegram"' },
+      { pattern: /\bto Telegram\b/i, description: '"to Telegram"' },
+      { pattern: /\bfrom Telegram\b/i, description: '"from Telegram"' },
+      { pattern: /\bwith Telegram\b/i, description: '"with Telegram"' },
+      { pattern: /\bOpen Telegram\b/i, description: '"Open Telegram"' },
+      { pattern: /\bTelegram profile\b/i, description: '"Telegram profile"' },
+      { pattern: /\bTelegram name\b/i, description: '"Telegram name"' },
+      { pattern: /\bTelegram FAQ\b/i, description: '"Telegram FAQ"' },
+      { pattern: /\bTelegram Features\b/i, description: '"Telegram Features"' },
+      { pattern: /\bTelegram client\b/i, description: '"Telegram client"' },
+      { pattern: /\bTelegram code\b/i, description: '"Telegram code"' },
+      { pattern: /\bTelegram login\b/i, description: '"Telegram login"' },
+      { pattern: /\bTelegram Support\b/i, description: '"Telegram Support"' },
+      { pattern: /\bTelegram offers\b/i, description: '"Telegram offers"' },
+      { pattern: /\bTelegram uses\b/i, description: '"Telegram uses"' },
+      { pattern: /\bTelegram shares\b/i, description: '"Telegram shares"' },
+      { pattern: /\bTelegram developed\b/i, description: '"Telegram developed"' },
+      { pattern: /\bTelegram never\b/i, description: '"Telegram never"' },
+      { pattern: /\bTelegram doesn'?t\b/i, description: '"Telegram doesn\'t"' },
+      { pattern: /\byour Telegram\b/i, description: '"your Telegram"' },
+      { pattern: /\bUpdate Telegram\b/i, description: '"Update Telegram"' },
+    ];
+
+    userVisiblePatterns.forEach(({ pattern, description }) => {
+      it(`should not contain ${description} in any localized string value`, () => {
+        const violations: string[] = [];
+        for (const [key, value] of Object.entries(parsed)) {
+          if (pattern.test(value)) {
+            violations.push(`"${key}" = "${value}"`);
+          }
+        }
+        expect(violations).toEqual([]);
+      });
+    });
+
+    it('should not have bare "Telegram" as a standalone word in values (except functional references)', () => {
+      // Match standalone "Telegram" not preceded/succeeded by other word chars
+      // Exclude known functional references: telegram.org, t.me, tg://, TelegramClient
+      const bareTelegram = /\bTelegram\b/;
+      const functionalExceptions = [
+        'telegram.org',
+        'TelegramClient',
+        'TelegramTips',
+      ];
+      const violations: string[] = [];
+      for (const [key, value] of Object.entries(parsed)) {
+        if (bareTelegram.test(value)) {
+          // Check if it's a functional reference
+          const isFunctional = functionalExceptions.some((exc) => value.includes(exc));
+          // Allow if the value already says "TeleBridge" or is clearly about API
+          if (!isFunctional && !value.includes('TeleBridge')) {
+            // Skip the "Telegram" key itself which maps to "TeleBridge"
+            if (key === 'Telegram') continue;
+            violations.push(`"${key}" = "${value.substring(0, 80)}"`);
+          }
+        }
+      }
+      expect(violations).toEqual([]);
+    });
+  });
+
+  describe('Localization strings — Login/QR screens say TeleBridge (VAL-BRAND-004)', () => {
+    const stringsContent = fs.readFileSync(
+      path.join(rootDir, 'src/assets/localization/fallback.strings'), 'utf-8',
+    );
+    const parsed = parseStringsFile(stringsContent);
+
+    it('LoginQRHelp1 should show "Open TeleBridge on your phone"', () => {
+      expect(parsed['LoginQRHelp1']).toBe('Open TeleBridge on your phone');
+    });
+
+    it('SentAppCode should reference "TeleBridge" not "Telegram"', () => {
+      expect(parsed['SentAppCode']).toContain('TeleBridge');
+      expect(parsed['SentAppCode']).not.toContain('Telegram');
+    });
+
+    it('LoginQRTitle should reference "TeleBridge"', () => {
+      expect(parsed['LoginQRTitle']).toContain('TeleBridge');
+    });
+  });
+
+  describe('Initial strings — no user-visible Telegram references', () => {
+    const initialContent = fs.readFileSync(
+      path.join(rootDir, 'src/assets/localization/initialStrings.ts'), 'utf-8',
+    );
+
+    it('SentAppCode should say "TeleBridge" not "Telegram"', () => {
+      expect(initialContent).not.toMatch(/"SentAppCode".*\bTelegram\b/);
+      expect(initialContent).toMatch(/"SentAppCode".*TeleBridge/);
+    });
+
+    it('LoginQRHelp1 should say "TeleBridge" not "Telegram"', () => {
+      expect(initialContent).not.toMatch(/"LoginQRHelp1".*\bTelegram\b/);
+    });
+
+    it('LoginQRTitle should say "TeleBridge" not "Telegram"', () => {
+      expect(initialContent).not.toMatch(/"LoginQRTitle".*\bTelegram\b/);
     });
   });
 });

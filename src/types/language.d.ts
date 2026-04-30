@@ -2312,6 +2312,17 @@ export interface LangPair {
   'TeleBridgeUnicodeMessageEncrypted': undefined;
   'TeleBridgeUnverified': undefined;
   'TeleBridgeVerificationUnknown': undefined;
+  'TeleBridgePauseEncryption': undefined;
+  'TeleBridgeResumeEncryption': undefined;
+  'TeleBridgePauseEncryptionDescription': undefined;
+  'TeleBridgeResumeEncryptionDescription': undefined;
+  'TeleBridgeEncryptionPaused': undefined;
+  'TeleBridgeEncryptionPausedTooltip': undefined;
+  'TeleBridgeLoginNeeded': undefined;
+  'TeleBridgeLoginNeededDescription': undefined;
+  'TeleBridgeLoginNeededUnlock': undefined;
+  'TeleBridgeStartEncryptionMenu': undefined;
+  'TeleBridgeStartEncryptionMenuDescription': undefined;
 }
 
 export interface LangPairWithVariables<V = LangVariable> {
