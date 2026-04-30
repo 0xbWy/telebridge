@@ -205,34 +205,282 @@ addActionHandler('telebridgeSetRecoveryVerified', (global, actions, payload): Ac
 
 // ---------- Key Exchange ----------
 
+/**
+ * Prekey bundle store for our own signed prekeys.
+ * Maps chatId → SignedPrekey so we can complete key exchange as responder.
+ */
+const prekeyBundleStore = new Map<string, {
+  bundle: import('../../../telebridge/crypto/keyExchange').PrekeyBundle;
+  consumedOneTimePrekeys: Map<number, import('../../../telebridge/crypto/identity').X25519Keypair>;
+}>();
+
+/**
+ * In-memory store for recipient X25519 public keys (base64) per chat.
+ * Populated during key exchange initiation from the recipient's prekey bundle.
+ */
+const recipientX25519PubStore = new Map<string, string>();
+
 addActionHandler('telebridgeStartKeyExchange', (global, actions, payload): ActionReturnType => {
-  const { chatId } = payload;
+  const { chatId, recipientPrekeyBundleBase64 } = payload as {
+    chatId: string;
+    recipientPrekeyBundleBase64?: string;
+  };
+
+  // Transition to inProgress immediately
   global = setChatKeyExchangeState(global, chatId, 'inProgress');
   setGlobal(global);
 
-  // In a real implementation, this would:
-  // 1. Generate an ephemeral X25519 keypair
-  // 2. Send a tb1.kx.<base64> message containing our ephemeral public key
-  // 3. Wait for the other party's response
-  // 4. Derive the shared chat key via ECDH
-  //
-  // For now, generate a random chat key and mark the exchange as complete
-  // This allows the messaging pipeline to function for testing and development
-  setTimeout(() => {
+  try {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const sym = require(
-      '../../../telebridge/crypto/symmetric',
-    ) as typeof import('../../../telebridge/crypto/symmetric');
+    const persistence = require(
+      '../../../telebridge/crypto/persistence',
+    ) as typeof import('../../../telebridge/crypto/persistence');
+
+    // Bridge must be unlocked to access identity keys
+    const identity = persistence.getUnlockedIdentity();
+    if (!identity) {
+      global = getGlobal();
+      global = setChatKeyExchangeState(global, chatId, 'failed');
+      global = setBridgeError(global, 'TeleBridgeBridgeLocked');
+      setGlobal(global);
+      return global;
+    }
+
     // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const msg = require('../../../telebridge/messages') as typeof import('../../../telebridge/messages');
+    const kx = require(
+      '../../../telebridge/crypto/keyExchange',
+    ) as typeof import('../../../telebridge/crypto/keyExchange');
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const protocol = require(
+      '../../../telebridge/crypto/protocol',
+    ) as typeof import('../../../telebridge/crypto/protocol');
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const msgs = require('../../../telebridge/messages') as typeof import('../../../telebridge/messages');
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const integ = require(
+      '../../../telebridge/integration',
+    ) as typeof import('../../../telebridge/integration');
 
-    const { key } = sym.generateChatKey();
-    msg.setChatKey(chatId, key);
+    // Step 1: Get the recipient's prekey bundle
+    let verifiedBundle: import('../../../telebridge/crypto/keyExchange').VerifiedPrekeyBundle;
+    if (recipientPrekeyBundleBase64) {
+      // Decode the recipient's prekey bundle from base64
+      const bundleJson = atob(recipientPrekeyBundleBase64);
+      const bundle: import('../../../telebridge/crypto/keyExchange').PrekeyBundle = JSON.parse(bundleJson);
 
+      // Reconstruct binary fields from base64 within the JSON
+      const reconstructedBundle: import('../../../telebridge/crypto/keyExchange').PrekeyBundle = {
+        identityPub: base64ToArray(bundle.identityPub as unknown as string),
+        x25519IdentityPub: base64ToArray(bundle.x25519IdentityPub as unknown as string),
+        signedPrekey: {
+          pub: base64ToArray((bundle.signedPrekey as any).pub as string),
+          priv: base64ToArray((bundle.signedPrekey as any).priv as string),
+          signature: base64ToArray((bundle.signedPrekey as any).signature as string),
+        },
+        oneTimePrekeys: (bundle.oneTimePrekeys as any[]).map((otpk: any) => ({
+          scalar: base64ToArray(otpk.scalar as string),
+          point: base64ToArray(otpk.point as string),
+        })),
+      };
+
+      verifiedBundle = kx.verifyPrekeyBundle(reconstructedBundle);
+    } else {
+      // Without a provided bundle, we cannot perform real X3DH.
+      // This path is used during development/testing when no bundle is available.
+      global = getGlobal();
+      global = setChatKeyExchangeState(global, chatId, 'failed');
+      global = setBridgeError(global, 'TeleBridgeNoPrekeyBundle');
+      setGlobal(global);
+      return global;
+    }
+
+    // Step 2: Perform X3DH key exchange using initiateKeyExchange()
+    const result = kx.initiateKeyExchange(identity.ed25519, verifiedBundle);
+
+    // Step 3: Store the derived chat key
+    msgs.setChatKey(chatId, result.chatDerivedKey);
+
+    // Step 4: Store recipient's X25519 public key for future use (secured messages)
+    recipientX25519PubStore.set(chatId, arrayToBase64(verifiedBundle.x25519IdentityPub));
+    integ.setRecipientX25519PublicKey(chatId, verifiedBundle.x25519IdentityPub);
+
+    // Step 5: Prepare tb1.kx message with ephemeral public key + our X25519 identity pub
+    const myX25519 = identity.x25519;
+    const kxPayload = new Uint8Array(64); // 32 bytes ephemeral + 32 bytes X25519 identity
+    kxPayload.set(result.ephemeralPub, 0);
+    kxPayload.set(myX25519.point, 32);
+    const kxMessage = protocol.encodeProtocol('kx', kxPayload);
+
+    // Step 6: Update chat encryption state to complete
     global = getGlobal();
-    global = setChatKeyExchangeState(global, chatId, 'complete');
+    global = setChatEncryptionState(global, chatId, (chatState) => ({
+      ...chatState,
+      status: 'encrypted' as EncryptionStatus,
+      keyExchangeState: 'complete' as KeyExchangeState,
+      showStartEncryptedBanner: false,
+      lastKeyExchangeAt: Date.now(),
+      messageCount: 0,
+    }));
     setGlobal(global);
-  }, 2000);
+
+    // The kxMessage should be sent via the Telegram transport.
+    // This is handled by the calling code (e.g., Composer.tsx or a key exchange UI component)
+    // which reads the pending kx message from state or a return value.
+    // For now, we store it as a pending outgoing message that the transport layer will pick up.
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const pendingKx = require('../../../telebridge/integration') as typeof import('../../../telebridge/integration');
+    pendingKx.setPendingKeyExchangeMessage(chatId, kxMessage);
+  } catch (error) {
+    // Key exchange failed — transition to 'failed' state
+    // eslint-disable-next-line no-console
+    console.error('[TeleBridge] Key exchange failed:', error);
+    global = getGlobal();
+    global = setChatKeyExchangeState(global, chatId, 'failed');
+    setGlobal(global);
+  }
+
+  return global;
+});
+
+// ---------- Complete Key Exchange (Responder) ----------
+
+addActionHandler('telebridgeCompleteKeyExchange', (global, actions, payload): ActionReturnType => {
+  const { chatId, kxMessage } = payload as {
+    chatId: string;
+    kxMessage: string;
+  };
+
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const persistence = require(
+      '../../../telebridge/crypto/persistence',
+    ) as typeof import('../../../telebridge/crypto/persistence');
+
+    // Bridge must be unlocked to access identity keys
+    const identity = persistence.getUnlockedIdentity();
+    if (!identity) {
+      global = setChatKeyExchangeState(global, chatId, 'failed');
+      global = setBridgeError(global, 'TeleBridgeBridgeLocked');
+      return global;
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const kx = require(
+      '../../../telebridge/crypto/keyExchange',
+    ) as typeof import('../../../telebridge/crypto/keyExchange');
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const protocol = require(
+      '../../../telebridge/crypto/protocol',
+    ) as typeof import('../../../telebridge/crypto/protocol');
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const msgs = require('../../../telebridge/messages') as typeof import('../../../telebridge/messages');
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const integ = require(
+      '../../../telebridge/integration',
+    ) as typeof import('../../../telebridge/integration');
+
+    // Decode the kx message
+    const decoded = protocol.decodeProtocol(kxMessage);
+    if (!decoded || decoded.mode !== 'kx') {
+      throw new Error('Invalid key exchange message format');
+    }
+
+    // Extract ephemeral public key and X25519 identity pub from payload
+    if (decoded.payload.length < 64) {
+      throw new Error('Key exchange payload too short: expected 64 bytes');
+    }
+
+    const theirEphemeralPub = decoded.payload.slice(0, 32);
+    const theirX25519IdentityPub = decoded.payload.slice(32, 64);
+
+    // Look up our own signed prekey for this chat
+    // If we have a prekey bundle store entry, use it; otherwise generate one on-the-fly
+    const storedData = prekeyBundleStore.get(chatId);
+    let signedPrekey: import('../../../telebridge/crypto/keyExchange').SignedPrekey;
+    let consumedOtpk: import('../../../telebridge/crypto/identity').X25519Keypair | undefined;
+
+    if (storedData) {
+      signedPrekey = storedData.bundle.signedPrekey;
+      // Consume the first available one-time prekey
+      const otpkEntry = storedData.consumedOneTimePrekeys.entries().next();
+      if (!otpkEntry.done) {
+        consumedOtpk = otpkEntry.value[1];
+      }
+    } else {
+      // Generate a signed prekey on-the-fly for this chat
+      signedPrekey = kx.generateSignedPrekey(identity.ed25519.signingBytes);
+    }
+
+    // Complete the key exchange using X3DH
+    const result = kx.completeKeyExchange(
+      identity.ed25519,
+      signedPrekey,
+      theirEphemeralPub,
+      theirX25519IdentityPub,
+      consumedOtpk,
+    );
+
+    // Store the derived chat key
+    msgs.setChatKey(chatId, result.chatDerivedKey);
+
+    // Store the initiator's X25519 public key for future use
+    integ.setRecipientX25519PublicKey(chatId, theirX25519IdentityPub);
+
+    // Update chat encryption state to complete
+    global = setChatEncryptionState(global, chatId, (chatState) => ({
+      ...chatState,
+      status: 'encrypted' as EncryptionStatus,
+      keyExchangeState: 'complete' as KeyExchangeState,
+      showStartEncryptedBanner: false,
+      lastKeyExchangeAt: Date.now(),
+      messageCount: 0,
+    }));
+  } catch (error) {
+    // Key exchange completion failed
+    // eslint-disable-next-line no-console
+    console.error('[TeleBridge] Key exchange completion failed:', error);
+    global = setChatKeyExchangeState(global, chatId, 'failed');
+  }
+
+  return global;
+});
+
+// ---------- Prekey Bundle Generation ----------
+
+addActionHandler('telebridgeGeneratePrekeyBundle', (global, actions, payload): ActionReturnType => {
+  const { chatId, numOneTimePrekeys } = payload as {
+    chatId: string;
+    numOneTimePrekeys?: number;
+  };
+
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const persistence = require(
+      '../../../telebridge/crypto/persistence',
+    ) as typeof import('../../../telebridge/crypto/persistence');
+
+    const identity = persistence.getUnlockedIdentity();
+    if (!identity) {
+      return global;
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const kx = require(
+      '../../../telebridge/crypto/keyExchange',
+    ) as typeof import('../../../telebridge/crypto/keyExchange');
+
+    // Generate the prekey bundle
+    const bundle = kx.generatePrekeyBundle(identity.ed25519, numOneTimePrekeys ?? 5);
+
+    // Store the signed prekey and one-time prekeys for later use in key exchange completion
+    const consumedOneTimePrekeys = new Map<number, import('../../../telebridge/crypto/identity').X25519Keypair>();
+    bundle.oneTimePrekeys.forEach((otpk: import('../../../telebridge/crypto/identity').X25519Keypair, i: number) => {
+      consumedOneTimePrekeys.set(i, otpk);
+    });
+    prekeyBundleStore.set(chatId, { bundle, consumedOneTimePrekeys });
+  } catch {
+    // Silently fail — the prekey bundle is not required for basic operation
+  }
 
   return global;
 });

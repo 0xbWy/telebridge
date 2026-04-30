@@ -55,6 +55,41 @@ import {
 // Re-exports for external consumers (like Composer.tsx)
 export { hasChatKey, setChatKey, isTeleBridgeMessage } from './messages';
 
+// ---------- Pending Key Exchange Messages ----------
+
+/**
+ * In-memory store for pending outgoing key exchange messages.
+ * When Alice initiates a key exchange, the tb1.kx message is stored here
+ * until the Telegram transport layer sends it.
+ * Maps chatId → kx protocol message string.
+ */
+const pendingKeyExchangeMessages = new Map<string, string>();
+
+/**
+ * Store a pending key exchange message for a chat.
+ * Called by telebridgeStartKeyExchange after successful key derivation.
+ */
+export function setPendingKeyExchangeMessage(chatId: string, kxMessage: string): void {
+  pendingKeyExchangeMessages.set(chatId, kxMessage);
+}
+
+/**
+ * Get and remove the pending key exchange message for a chat.
+ * Called by the transport layer when sending the kx message.
+ */
+export function consumePendingKeyExchangeMessage(chatId: string): string | undefined {
+  const msg = pendingKeyExchangeMessages.get(chatId);
+  pendingKeyExchangeMessages.delete(chatId);
+  return msg;
+}
+
+/**
+ * Check if there's a pending key exchange message for a chat.
+ */
+export function hasPendingKeyExchangeMessage(chatId: string): boolean {
+  return pendingKeyExchangeMessages.has(chatId);
+}
+
 // ---------- Types ----------
 
 /** Result of processing an outgoing message through TeleBridge. */
@@ -393,30 +428,74 @@ export async function processIncomingMessage(
  * @param chatId - Chat ID for key storage
  * @returns Key ID of the newly established chat key
  */
+/** Result of processing an incoming key exchange message. */
+export interface KeyExchangeResult {
+  /** Whether validation succeeded. */
+  readonly isValid: boolean;
+  /** The sender's ephemeral X25519 public key (32 bytes). */
+  readonly ephemeralPub: Uint8Array | undefined;
+  /** The sender's X25519 identity public key (32 bytes). */
+  readonly x25519IdentityPub: Uint8Array | undefined;
+  /** Error message if validation failed. */
+  readonly error: string | undefined;
+}
+
 export function processKeyExchangeMessage(
   protocolString: string,
   _chatId: string,
-): string {
+): KeyExchangeResult {
   const decoded = decodeProtocol(protocolString);
   if (!decoded || decoded.mode !== 'kx') {
-    throw new Error('Invalid key exchange message');
+    return {
+      isValid: false,
+      ephemeralPub: undefined,
+      x25519IdentityPub: undefined,
+      error: 'Invalid key exchange message',
+    };
   }
 
   // VAL-SEC-002: Validate protocol version (reject downgrades)
   const versionValidation = validateProtocolVersion(decoded.version);
   if (!versionValidation.isValid) {
-    throw new Error(`Protocol version rejected: ${versionValidation.reason}`);
+    return {
+      isValid: false,
+      ephemeralPub: undefined,
+      x25519IdentityPub: undefined,
+      error: `Protocol version rejected: ${versionValidation.reason}`,
+    };
   }
 
   // VAL-SEC-003: Validate kx message structure (reject forged messages)
   const kxValidation = validateKeyExchangeMessage(protocolString);
   if (!kxValidation.isValid) {
-    throw new Error(`Forged key exchange message: ${kxValidation.reason}`);
+    return {
+      isValid: false,
+      ephemeralPub: undefined,
+      x25519IdentityPub: undefined,
+      error: `Forged key exchange message: ${kxValidation.reason}`,
+    };
   }
 
-  // The kx payload contains the sender's X25519 ephemeral public key
-  // Full ECDH and key derivation is handled in the telebridge actions
-  return decoded.mode;
+  // The kx payload contains the sender's X25519 ephemeral public key (32 bytes)
+  // and X25519 identity public key (32 bytes), totaling 64 bytes.
+  if (decoded.payload.length < 64) {
+    return {
+      isValid: false,
+      ephemeralPub: undefined,
+      x25519IdentityPub: undefined,
+      error: `Key exchange payload too short: ${decoded.payload.length} bytes (expected 64)`,
+    };
+  }
+
+  const ephemeralPub = decoded.payload.slice(0, 32);
+  const x25519IdentityPub = decoded.payload.slice(32, 64);
+
+  return {
+    isValid: true,
+    ephemeralPub,
+    x25519IdentityPub,
+    error: undefined,
+  };
 }
 
 /**
@@ -584,6 +663,7 @@ export function isEncryptToSelfDuplicate(
 export function lockMessagePipeline(): void {
   clearAllChatKeys();
   recipientX25519PublicKeys.clear();
+  pendingKeyExchangeMessages.clear();
   // Clear group encryption keys
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const groupState = require('./group/groupState') as typeof import('./group/groupState');

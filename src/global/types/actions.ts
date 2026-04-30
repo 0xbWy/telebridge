@@ -3195,7 +3195,7 @@ export interface ActionPayloads {
   telebridgeInitStartup: undefined;
   telebridgeClearError: undefined;
   telebridgeSetRecoveryVerified: { verified: boolean };
-  telebridgeStartKeyExchange: { chatId: string };
+  telebridgeStartKeyExchange: { chatId: string; recipientPrekeyBundleBase64?: string };
   telebridgeSetChatEncryptionStatus: { chatId: string; status: string };
   telebridgeAcknowledgeKeyChange: { chatId: string };
   telebridgeDismissBanner: { chatId: string };
@@ -3205,6 +3205,8 @@ export interface ActionPayloads {
   telebridgeEstablishChatKey: { chatId: string; keyBase64: string };
   telebridgeIncrementMessageCount: { chatId: string };
   telebridgeRotateChatKey: { chatId: string };
+  telebridgeCompleteKeyExchange: { chatId: string; kxMessage: string };
+  telebridgeGeneratePrekeyBundle: { chatId: string; numOneTimePrekeys?: number };
   telebridgeInitGroupEncryption: { chatId: string; memberIds: string[] };
   telebridgeGenerateGroupSenderKey: { chatId: string; memberId: string };
   telebridgeDistributeGroupSenderKey: { chatId: string; memberId: string };
