@@ -1,7 +1,7 @@
 {
     "name": "TeleBridge",
     "short_name": "TeleBridge",
-    "description": "TeleBridge — secure messaging with end-to-end encryption on top of Telegram.",
+    "description": "TeleBridge — secure messaging with end-to-end encryption.",
     "start_url": "./",
     "gcm_sender_id": "122867383838",
     "icons": [

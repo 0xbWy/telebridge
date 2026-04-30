@@ -303,6 +303,170 @@ describe('TeleBridge Branding', () => {
     });
   });
 
+  describe('HTML page titles — no "Telegram" (VAL-BRAND-001)', () => {
+    const htmlFiles = [
+      'public/get/index.html',
+      'public/get/mac.html',
+      'public/get/unsupported.html',
+      'public/share/index.html',
+    ];
+
+    htmlFiles.forEach((filePath) => {
+      const fileName = path.basename(filePath);
+      const content = fs.readFileSync(path.join(rootDir, filePath), 'utf-8');
+
+      describe(fileName, () => {
+        it('should not contain "Telegram" in any element', () => {
+          expect(content).not.toContain('Telegram');
+        });
+
+        it('should contain "TeleBridge" in page title or heading', () => {
+          expect(content).toContain('TeleBridge');
+        });
+      });
+    });
+
+    const indexHtml = fs.readFileSync(path.join(rootDir, 'src/index.html'), 'utf-8');
+
+    it('src/index.html should not contain "Telegram" in any element', () => {
+      expect(indexHtml).not.toContain('Telegram');
+    });
+  });
+
+  describe('Webmanifest descriptions — no "Telegram" (VAL-BRAND-002)', () => {
+    const manifestFiles = [
+      'public/site.webmanifest',
+      'public/site_dev.webmanifest',
+      'public/site_apple.webmanifest',
+      'public/site_apple_dev.webmanifest',
+    ];
+
+    manifestFiles.forEach((filePath) => {
+      const fileName = path.basename(filePath);
+      const content = fs.readFileSync(path.join(rootDir, filePath), 'utf-8');
+
+      it(`${fileName} should not contain "Telegram" in any field`, () => {
+        expect(content).not.toContain('Telegram');
+      });
+    });
+  });
+
+  describe('Meta tags — no "Telegram" references (VAL-BRAND-009)', () => {
+    const indexHtml = fs.readFileSync(path.join(rootDir, 'src/index.html'), 'utf-8');
+
+    it('should not have "Telegram" in meta description', () => {
+      expect(indexHtml).not.toMatch(/name="description"[^>]*Telegram/i);
+    });
+
+    it('should not have "Telegram" in og:description', () => {
+      expect(indexHtml).not.toMatch(/og:description[^>]*Telegram/i);
+    });
+
+    it('should not have "Telegram" in twitter:description', () => {
+      expect(indexHtml).not.toMatch(/twitter:description[^>]*Telegram/i);
+    });
+  });
+
+  describe('CSS variables — no "telegram" in variable names (VAL-BRAND-011)', () => {
+    const variablesContent = fs.readFileSync(path.join(rootDir, 'src/styles/_variables.scss'), 'utf-8');
+    const authContent = fs.readFileSync(path.join(rootDir, 'src/components/auth/Auth.scss'), 'utf-8');
+
+    it('should not have --color-telegram-blue in variables', () => {
+      expect(variablesContent).not.toContain('--color-telegram-blue');
+    });
+
+    it('should have --color-telebridge-blue in variables', () => {
+      expect(variablesContent).toContain('--color-telebridge-blue');
+    });
+
+    it('should not have var(--color-telegram-blue) in Auth.scss', () => {
+      expect(authContent).not.toContain('var(--color-telegram-blue)');
+    });
+
+    it('should have var(--color-telebridge-blue) in Auth.scss', () => {
+      expect(authContent).toContain('var(--color-telebridge-blue)');
+    });
+  });
+
+  describe('SVG assets — telebridge-logo files exist (VAL-BRAND-012)', () => {
+    it('should have telebridge-logo.svg in assets', () => {
+      expect(fs.existsSync(path.join(rootDir, 'src/assets/telebridge-logo.svg'))).toBe(true);
+    });
+
+    it('should have telebridge-logo-filled.svg in assets', () => {
+      expect(fs.existsSync(path.join(rootDir, 'src/assets/telebridge-logo-filled.svg'))).toBe(true);
+    });
+
+    it('should not import telegram-logo in any source file', () => {
+      const srcDir = path.join(rootDir, 'src');
+      const violations: string[] = [];
+
+      function walkDir(dir: string): void {
+        const entries = fs.readdirSync(dir, { withFileTypes: true });
+        for (const entry of entries) {
+          const fullPath = path.join(dir, entry.name);
+          if (entry.isDirectory()) {
+            walkDir(fullPath);
+          } else if (/\.(ts|tsx|js|jsx|scss|css)$/.test(entry.name)) {
+            const content = fs.readFileSync(fullPath, 'utf-8');
+            if (content.includes('telegram-logo')) {
+              violations.push(path.relative(rootDir, fullPath));
+            }
+          }
+        }
+      }
+
+      walkDir(srcDir);
+      expect(violations).toEqual([]);
+    });
+  });
+
+  describe('Tauri config — no telegram_air or org.telegram (VAL-BRAND-013)', () => {
+    const cargoContent = fs.readFileSync(path.join(rootDir, 'tauri/Cargo.toml'), 'utf-8');
+    const plistContent = fs.readFileSync(path.join(rootDir, 'tauri/Info.plist'), 'utf-8');
+    const prepareContent = fs.readFileSync(path.join(rootDir, 'deploy/prepareTauriConfig.js'), 'utf-8');
+
+    it('Cargo.toml should have name "telebridge"', () => {
+      expect(cargoContent).toMatch(/name\s*=\s*"telebridge"/);
+    });
+
+    it('Cargo.toml should have description "TeleBridge"', () => {
+      expect(cargoContent).toMatch(/description\s*=\s*"TeleBridge"/);
+    });
+
+    it('Info.plist bundle ID should not contain org.telegram', () => {
+      expect(plistContent).not.toContain('org.telegram');
+    });
+
+    it('Info.plist bundle ID should be online.telebridge.app', () => {
+      expect(plistContent).toContain('online.telebridge.app');
+    });
+
+    it('prepareTauriConfig should not contain org.telegram', () => {
+      expect(prepareContent).not.toContain('org.telegram');
+    });
+
+    it('prepareTauriConfig should have online.telebridge.app identifier', () => {
+      expect(prepareContent).toContain('online.telebridge.app');
+    });
+  });
+
+  describe('Deploy scripts — no "Telegram Air" (VAL-BRAND-014)', () => {
+    const dmgContent = fs.readFileSync(path.join(rootDir, 'deploy/tauri_create_dmg.sh'), 'utf-8');
+
+    it('should not contain "Telegram Air"', () => {
+      expect(dmgContent).not.toContain('Telegram Air');
+    });
+
+    it('should not contain "TelegramAir"', () => {
+      expect(dmgContent).not.toContain('TelegramAir');
+    });
+
+    it('should contain "TeleBridge"', () => {
+      expect(dmgContent).toContain('TeleBridge');
+    });
+  });
+
   describe('Initial strings — no user-visible Telegram references', () => {
     const initialContent = fs.readFileSync(
       path.join(rootDir, 'src/assets/localization/initialStrings.ts'), 'utf-8',
