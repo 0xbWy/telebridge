@@ -394,7 +394,7 @@ function getStarsPeerTitleKey(peer: ApiStarsTransactionPeer) {
     case 'ads':
       return 'StarsTransactionAds';
     case 'api':
-      return 'Stars.Intro.Transaction.TelegramBotApi.Subtitle';
+      return 'Stars.Intro.Transaction.TeleBridgeBotApi.Subtitle';
     default:
       return 'Stars.Transaction.Unsupported.Title';
   }

@@ -467,6 +467,121 @@ describe('TeleBridge Branding', () => {
     });
   });
 
+  describe('UI Components — no hardcoded "Telegram" in TSX (VAL-BRAND-010)', () => {
+    it('should not have aria-label containing "Telegram" in any TSX file', () => {
+      const srcDir = path.join(rootDir, 'src');
+      const violations: string[] = [];
+
+      function walkDir(dir: string): void {
+        const entries = fs.readdirSync(dir, { withFileTypes: true });
+        for (const entry of entries) {
+          const fullPath = path.join(dir, entry.name);
+          if (entry.isDirectory() && entry.name !== 'lib') {
+            walkDir(fullPath);
+          } else if (/\.tsx$/.test(entry.name)) {
+            const content = fs.readFileSync(fullPath, 'utf-8');
+            const ariaMatch = content.match(/aria-label="[^"]*Telegram[^"]*"/g);
+            if (ariaMatch) {
+              violations.push(`${path.relative(rootDir, fullPath)}: ${ariaMatch.join(', ')}`);
+            }
+          }
+        }
+      }
+
+      walkDir(srcDir);
+      expect(violations).toEqual([]);
+    });
+
+    it('should not have hardcoded "Telegram" string literals in components', () => {
+      const srcDir = path.join(rootDir, 'src/components');
+      const violations: string[] = [];
+
+      function walkDir(dir: string): void {
+        const entries = fs.readdirSync(dir, { withFileTypes: true });
+        for (const entry of entries) {
+          const fullPath = path.join(dir, entry.name);
+          if (entry.isDirectory()) {
+            walkDir(fullPath);
+          } else if (/\.tsx$/.test(entry.name)) {
+            const content = fs.readFileSync(fullPath, 'utf-8');
+            // Match "Telegram or 'Telegram — hardcoded string literals with Telegram as a standalone word
+            const hardCodedMatch = content.match(/["']Telegram\b/g);
+            if (hardCodedMatch) {
+              // Filter out functional references like openTelegramLink action names
+              const lines = content.split('\n');
+              lines.forEach((line, idx) => {
+                const matches = line.match(/["']Telegram\b/g);
+                if (matches) {
+                  // Skip action handler names (openTelegramLink) and variable names that reference the platform
+                  if (/openTelegramLink|TelegramLink|openUrl.*Telegram/.test(line)) return;
+                  // Skip comments
+                  if (/^\s*\/\//.test(line) || /^\s*\*?/.test(line)) return;
+                  violations.push(`${path.relative(rootDir, fullPath)}:${idx + 1}: ${line.trim()}`);
+                }
+              });
+            }
+          }
+        }
+      }
+
+      walkDir(srcDir);
+      expect(violations).toEqual([]);
+    });
+  });
+
+  describe('Stars transaction keys — no Telegram in key names (VAL-BRAND-015)', () => {
+    it('StarsTransactionModal should not reference TelegramBotApi key', () => {
+      const content = fs.readFileSync(
+        path.join(rootDir, 'src/components/modals/stars/transaction/StarsTransactionModal.tsx'), 'utf-8',
+      );
+      expect(content).not.toContain('TelegramBotApi');
+    });
+
+    it('payments.ts should not reference TelegramBotApi key names', () => {
+      const content = fs.readFileSync(
+        path.join(rootDir, 'src/global/helpers/payments.ts'), 'utf-8',
+      );
+      expect(content).not.toContain('TelegramBotApi');
+      expect(content).not.toContain('TelegramAds');
+    });
+
+    it('payments.ts should reference TeleBridgeBotApi key names', () => {
+      const content = fs.readFileSync(
+        path.join(rootDir, 'src/global/helpers/payments.ts'), 'utf-8',
+      );
+      expect(content).toContain('TeleBridgeBotApi');
+      expect(content).toContain('TeleBridgeAds');
+    });
+  });
+
+  describe('Dialogs.tsx — default title is TeleBridge', () => {
+    it('renderTextDialog should have default title "TeleBridge"', () => {
+      const content = fs.readFileSync(
+        path.join(rootDir, 'src/components/main/Dialogs.tsx'), 'utf-8',
+      );
+      expect(content).toContain("'TeleBridge'");
+      expect(content).not.toMatch(/title.*=.*['"]Telegram['"]/);
+    });
+
+    it('getErrorHeader should return "TeleBridge"', () => {
+      const content = fs.readFileSync(
+        path.join(rootDir, 'src/components/main/Dialogs.tsx'), 'utf-8',
+      );
+      // Check the default return value references TeleBridge
+      expect(content).not.toMatch(/return\s+['"]Telegram['"]/);
+    });
+  });
+
+  describe('ConfirmDialog.tsx — uses TeleBridge-branded key', () => {
+    it('should use lang("TeleBridge") as default title', () => {
+      const content = fs.readFileSync(
+        path.join(rootDir, 'src/components/ui/ConfirmDialog.tsx'), 'utf-8',
+      );
+      expect(content).toContain("lang('TeleBridge')");
+      expect(content).not.toContain("lang('Telegram')");
+    });
+  });
+
   describe('Initial strings — no user-visible Telegram references', () => {
     const initialContent = fs.readFileSync(
       path.join(rootDir, 'src/assets/localization/initialStrings.ts'), 'utf-8',

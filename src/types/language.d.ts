@@ -1403,6 +1403,10 @@ export interface LangPair {
   'PremiumGiftDescription': undefined;
   'StarsReactionLinkText': undefined;
   'StarsReactionLink': undefined;
+  'StarsIntroTransactionTeleBridgeAdsTitle': undefined;
+  'StarsIntroTransactionTeleBridgeAdsSubtitle': undefined;
+  'StarsIntroTransactionTeleBridgeBotApiTitle': undefined;
+  'StarsIntroTransactionTeleBridgeBotApiSubtitle': undefined;
   'SentGift': undefined;
   'StarsSubscribeInfoLinkText': undefined;
   'StarsSubscribeInfoLink': undefined;

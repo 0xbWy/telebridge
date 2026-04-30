@@ -42,7 +42,7 @@ const GiftInfoValueModal: FC<OwnProps> = ({
     }
   });
 
-  const handleOpenTelegramMarket = useLastCallback(() => {
+  const handleOpenMarketplace = useLastCallback(() => {
     if (modal?.gift) {
       openGiftInMarket({ gift: modal.gift });
     }
@@ -126,8 +126,8 @@ const GiftInfoValueModal: FC<OwnProps> = ({
     }
 
     const canBuyOnFragment = Boolean(valueInfo.fragmentListedUrl && valueInfo.fragmentListedCount);
-    const canBuyOnTelegram = Boolean(valueInfo.listedCount && valueInfo.listedCount);
-    const hasFooter = canBuyOnFragment || canBuyOnTelegram;
+    const canBuyOnMarketplace = Boolean(valueInfo.listedCount && valueInfo.listedCount);
+    const hasFooter = canBuyOnFragment || canBuyOnMarketplace;
 
     const footer = hasFooter && (
       <div className={styles.footer}>
@@ -148,12 +148,12 @@ const GiftInfoValueModal: FC<OwnProps> = ({
           </Button>
         )}
 
-        {canBuyOnTelegram && (
+        {canBuyOnMarketplace && (
           <Button
             isText
             noForcedUpperCase
             size="tiny"
-            onClick={handleOpenTelegramMarket}
+            onClick={handleOpenMarketplace}
           >
             {lang.number(valueInfo.listedCount!)}
             <AnimatedIconFromSticker
@@ -172,7 +172,7 @@ const GiftInfoValueModal: FC<OwnProps> = ({
       tableData,
       footer,
     };
-  }, [lang, renderingModal, handleOpenFragment, handleOpenTelegramMarket]);
+  }, [lang, renderingModal, handleOpenFragment, handleOpenMarketplace]);
 
   if (!modalData) return undefined;
 

@@ -373,8 +373,8 @@ export function buildStarsTransactionCustomPeer(
     return {
       avatarIcon: 'star',
       isCustomPeer: true,
-      titleKey: 'Stars.Intro.Transaction.TelegramAds.Title',
-      subtitleKey: 'Stars.Intro.Transaction.TelegramAds.Subtitle',
+      titleKey: 'Stars.Intro.Transaction.TeleBridgeAds.Title',
+      subtitleKey: 'Stars.Intro.Transaction.TeleBridgeAds.Subtitle',
       peerColorId: 2,
     };
   }
@@ -383,8 +383,8 @@ export function buildStarsTransactionCustomPeer(
     return {
       avatarIcon: 'bots',
       isCustomPeer: true,
-      titleKey: 'Stars.Intro.Transaction.TelegramBotApi.Title',
-      subtitleKey: 'Stars.Intro.Transaction.TelegramBotApi.Subtitle',
+      titleKey: 'Stars.Intro.Transaction.TeleBridgeBotApi.Title',
+      subtitleKey: 'Stars.Intro.Transaction.TeleBridgeBotApi.Subtitle',
       peerColorId: 4,
     };
   }
