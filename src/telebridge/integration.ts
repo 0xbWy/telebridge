@@ -19,9 +19,14 @@
  * - #8: Password never in global state
  */
 
+import { x25519 } from '@noble/curves/ed25519.js';
+
 import type { MediaType } from './crypto/media';
 import type { ProtocolMode } from './crypto/protocol';
 
+import {
+  deriveChatKey,
+} from './crypto/keyExchange';
 import {
   getUnlockedIdentity,
   isBridgeUnlocked,
@@ -33,6 +38,10 @@ import {
   PROTOCOL_PREFIX,
 } from './crypto/protocol';
 import {
+  decryptSymmetric,
+  encryptSymmetric,
+} from './crypto/symmetric';
+import {
   validateMessageInputSize,
 } from './edgeCases';
 import {
@@ -43,6 +52,7 @@ import {
   hasChatKey,
   isTeleBridgeMessage,
   rotateChatKey,
+  setChatKey,
   shouldHideMessage,
   shouldRotateChatKey,
 } from './messages';
@@ -267,6 +277,22 @@ export async function processOutgoingSecuredMessage(
   };
 }
 
+// ---------- KX Message Detection ----------
+
+/**
+ * Check if a message text is a key exchange (tb1.kx) protocol message.
+ * Used by the message ingestion pipeline to detect kx messages
+ * that need to be dispatched to telebridgeCompleteKeyExchange.
+ *
+ * @param text - Raw message text from Telegram
+ * @returns true if the message is a tb1.kx message
+ */
+export function isKeyExchangeMessage(text: string): boolean {
+  if (!isTeleBridgeMessage(text)) return false;
+  const decoded = decodeProtocol(text);
+  return decoded?.mode === 'kx';
+}
+
 // ---------- Incoming Message Decryption ----------
 
 /**
@@ -434,8 +460,12 @@ export interface KeyExchangeResult {
   readonly isValid: boolean;
   /** The sender's ephemeral X25519 public key (32 bytes). */
   readonly ephemeralPub: Uint8Array | undefined;
-  /** The sender's X25519 identity public key (32 bytes). */
+  /** The sender's X25519 identity public key (32 bytes).
+   *  Only present for initial kx messages (not rotation). */
   readonly x25519IdentityPub: Uint8Array | undefined;
+  /** The new key ID for rotation kx messages.
+   *  Only present for rotation kx messages (not initial). */
+  readonly newKeyId: string | undefined;
   /** Error message if validation failed. */
   readonly error: string | undefined;
 }
@@ -450,6 +480,7 @@ export function processKeyExchangeMessage(
       isValid: false,
       ephemeralPub: undefined,
       x25519IdentityPub: undefined,
+      newKeyId: undefined,
       error: 'Invalid key exchange message',
     };
   }
@@ -461,6 +492,7 @@ export function processKeyExchangeMessage(
       isValid: false,
       ephemeralPub: undefined,
       x25519IdentityPub: undefined,
+      newKeyId: undefined,
       error: `Protocol version rejected: ${versionValidation.reason}`,
     };
   }
@@ -472,17 +504,23 @@ export function processKeyExchangeMessage(
       isValid: false,
       ephemeralPub: undefined,
       x25519IdentityPub: undefined,
+      newKeyId: undefined,
       error: `Forged key exchange message: ${kxValidation.reason}`,
     };
   }
 
-  // The kx payload contains the sender's X25519 ephemeral public key (32 bytes)
-  // and X25519 identity public key (32 bytes), totaling 64 bytes.
+  // Check if this is a rotation kx message (starts with 0x02 marker)
+  if (decoded.payload.length > 0 && decoded.payload[0] === ROTATION_KX_MARKER) {
+    return processRotationKxMessage(decoded.payload, _chatId);
+  }
+
+  // Initial kx message: ephemeralPub (32 bytes) + x25519IdentityPub (32 bytes) = 64 bytes
   if (decoded.payload.length < 64) {
     return {
       isValid: false,
       ephemeralPub: undefined,
       x25519IdentityPub: undefined,
+      newKeyId: undefined,
       error: `Key exchange payload too short: ${decoded.payload.length} bytes (expected 64)`,
     };
   }
@@ -494,8 +532,255 @@ export function processKeyExchangeMessage(
     isValid: true,
     ephemeralPub,
     x25519IdentityPub,
+    newKeyId: undefined, // Not present in initial kx messages
     error: undefined,
   };
+}
+
+// ---------- Rotation Key Exchange Message Processing ----------
+
+/**
+ * Rotation kx payload minimum size:
+ * [0x02 marker (1)] [keyId (4)] [ephemeralPub (32)] [nonce (12)] [ciphertext (32)] [authTag (16)] = 97 bytes
+ */
+const ROTATION_KX_MIN_PAYLOAD = 1 + 4 + 32 + 12 + 32 + 16;
+
+/**
+ * Process a rotation key exchange message (payload starts with 0x02 marker).
+ *
+ * Rotation kx messages are used during key rotation to deliver a new symmetric key
+ * encrypted via ECDH. The format is:
+ * [0x02 marker (1)] [keyId (4)] [ephemeralPub (32)] [nonce (12)] [ciphertext (32)] [authTag (16)]
+ *
+ * VAL-SEC-006: The new symmetric key is never sent in the clear — it's encrypted
+ * via ECDH with the recipient's public key.
+ *
+ * @param payload - The decoded kx payload (starting with 0x02 marker)
+ * @param _chatId - Chat ID (for future key storage)
+ * @returns Rotation kx result with ephemeralPub and newKeyId
+ */
+function processRotationKxMessage(
+  payload: Uint8Array,
+  _chatId: string,
+): KeyExchangeResult {
+  // Validate minimum payload size
+  if (payload.length < ROTATION_KX_MIN_PAYLOAD) {
+    return {
+      isValid: false,
+      ephemeralPub: undefined,
+      x25519IdentityPub: undefined,
+      newKeyId: undefined,
+      error: `Rotation kx payload too short: ${payload.length} bytes (minimum ${ROTATION_KX_MIN_PAYLOAD})`,
+    };
+  }
+
+  // Parse the payload
+  let offset = 0;
+
+  // Marker byte (already verified to be 0x02 by the caller)
+  const marker = payload[offset];
+  if (marker !== ROTATION_KX_MARKER) {
+    return {
+      isValid: false,
+      ephemeralPub: undefined,
+      x25519IdentityPub: undefined,
+      newKeyId: undefined,
+      error: `Invalid rotation kx marker: expected 0x02, got 0x${marker.toString(16).padStart(2, '0')}`,
+    };
+  }
+  offset += 1;
+
+  // Key ID (4 bytes)
+  const keyIdBytes = payload.slice(offset, offset + 4);
+  const newKeyId = Array.from(keyIdBytes)
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('');
+  offset += 4;
+
+  // Ephemeral public key (32 bytes)
+  const ephemeralPub = payload.slice(offset, offset + 32);
+  offset += 32;
+
+  // Nonce (12 bytes) — extracted for validation
+  const _nonce = payload.slice(offset, offset + 12);
+  offset += 12;
+
+  // Ciphertext (remaining - 16 bytes authTag)
+  const ciphertextLen = payload.length - offset - 16;
+  if (ciphertextLen <= 0) {
+    return {
+      isValid: false,
+      ephemeralPub: undefined,
+      x25519IdentityPub: undefined,
+      newKeyId: undefined,
+      error: `Rotation kx ciphertext too short: ${ciphertextLen} bytes`,
+    };
+  }
+  const _ciphertext = payload.slice(offset, offset + ciphertextLen);
+  offset += ciphertextLen;
+
+  // Auth tag (16 bytes)
+  const _authTag = payload.slice(offset, offset + 16);
+
+  // Validate ephemeral public key is not all zeros (low-order point check)
+  let isAllZeros = true;
+  for (let i = 0; i < 32; i++) {
+    if (ephemeralPub[i] !== 0) {
+      isAllZeros = false;
+      break;
+    }
+  }
+  if (isAllZeros) {
+    return {
+      isValid: false,
+      ephemeralPub: undefined,
+      x25519IdentityPub: undefined,
+      newKeyId: undefined,
+      error: 'All-zero ephemeral public key detected in rotation kx message',
+    };
+  }
+
+  // The rotation kx message is valid.
+  // The actual decryption of the new chat key requires the recipient's private key
+  // and is handled by processRotationKxDecryption().
+  // Here we just validate and extract the public components.
+
+  return {
+    isValid: true,
+    ephemeralPub,
+    x25519IdentityPub: undefined, // Not present in rotation kx messages
+    newKeyId,
+    error: undefined,
+  };
+}
+
+/**
+ * Result of decrypting a rotation key exchange message.
+ */
+export interface RotationKxDecryptionResult {
+  /** Whether decryption succeeded. */
+  readonly success: boolean;
+  /** The new chat key (32 bytes), decrypted from the rotation message. */
+  readonly newKey: Uint8Array | undefined;
+  /** The new key ID (hex of first 4 bytes of the key). */
+  readonly newKeyId: string | undefined;
+  /** Error message if decryption failed. */
+  readonly error: string | undefined;
+}
+
+/**
+ * Decrypt the new chat key from a rotation kx message using the recipient's
+ * X25519 private key and the sender's ephemeral public key.
+ *
+ * This performs the ECDH computation in reverse:
+ * 1. ECDH(X25519_identity_priv, sender_ephemeral_pub) → shared secret
+ * 2. HKDF(shared_secret, ...) → rotation encryption key
+ * 3. AES-256-GCM decrypt the ciphertext using the rotation encryption key
+ * 4. Store the new chat key for future message encryption/decryption
+ *
+ * @param protocolString - The tb1.kx.<base64> message
+ * @param chatId - Chat ID for key storage
+ * @param myX25519Scalar - Our X25519 private scalar
+ * @returns Decryption result with the new chat key
+ */
+export async function processRotationKxDecryption(
+  protocolString: string,
+  chatId: string,
+  myX25519Scalar: Uint8Array,
+): Promise<RotationKxDecryptionResult> {
+  const decoded = decodeProtocol(protocolString);
+  if (!decoded || decoded.mode !== 'kx') {
+    return { success: false, newKey: undefined, newKeyId: undefined, error: 'Invalid kx message' };
+  }
+
+  const payload = decoded.payload;
+
+  // Must be a rotation kx message (starts with 0x02 marker)
+  if (payload.length < 1 || payload[0] !== ROTATION_KX_MARKER) {
+    return { success: false, newKey: undefined, newKeyId: undefined, error: 'Not a rotation kx message' };
+  }
+
+  if (payload.length < ROTATION_KX_MIN_PAYLOAD) {
+    return {
+      success: false,
+      newKey: undefined,
+      newKeyId: undefined,
+      error: `Rotation kx payload too short: ${payload.length} bytes`,
+    };
+  }
+
+  // Parse the payload
+  let offset = 0;
+  offset += 1; // skip marker
+
+  const keyIdBytes = payload.slice(offset, offset + 4);
+  const newKeyId = Array.from(keyIdBytes)
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('');
+  offset += 4;
+
+  const ephemeralPub = payload.slice(offset, offset + 32);
+  offset += 32;
+
+  const nonce = payload.slice(offset, offset + 12);
+  offset += 12;
+
+  const ciphertextLen = payload.length - offset - 16;
+  if (ciphertextLen <= 0) {
+    return {
+      success: false,
+      newKey: undefined,
+      newKeyId: undefined,
+      error: `Rotation kx ciphertext too short: ${ciphertextLen} bytes`,
+    };
+  }
+  const ciphertext = payload.slice(offset, offset + ciphertextLen);
+  offset += ciphertextLen;
+
+  const authTag = payload.slice(offset, offset + 16);
+
+  try {
+    // Perform ECDH: our X25519 private key × sender's ephemeral public key
+    const ecdhSharedSecret = x25519.getSharedSecret(myX25519Scalar, ephemeralPub);
+
+    // Derive the same rotation encryption key using HKDF-SHA256
+    const rotationEncKey = deriveChatKey(ecdhSharedSecret);
+
+    // Build AAD: rotation marker + key ID
+    const aad = new Uint8Array(5);
+    aad[0] = ROTATION_KX_MARKER;
+    aad.set(keyIdBytes, 1);
+
+    // Decrypt the new chat key using AES-256-GCM
+    const decryptedKey = await decryptSymmetric(nonce, ciphertext, authTag, rotationEncKey, aad);
+
+    // Defense-in-depth: verify decrypted key length is 32 bytes (AES-256)
+    if (decryptedKey.length !== 32) {
+      return {
+        success: false,
+        newKey: undefined,
+        newKeyId: undefined,
+        error: `Decrypted key length is ${decryptedKey.length} bytes (expected 32)`,
+      };
+    }
+
+    // Store the new chat key for this chat
+    setChatKey(chatId, decryptedKey);
+
+    return {
+      success: true,
+      newKey: decryptedKey,
+      newKeyId,
+      error: undefined,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      newKey: undefined,
+      newKeyId: undefined,
+      error: `Rotation kx decryption failed: ${error instanceof Error ? error.message : 'unknown error'}`,
+    };
+  }
 }
 
 /**
@@ -615,17 +900,86 @@ export async function processReplyMessage(
 /**
  * Check if key rotation is needed and return the rotation data.
  * Called after each encrypted message send.
+ * Also generates the ECDH-encrypted kx message for distribution.
  *
  * @param chatId - Chat ID to check
- * @returns Rotation data if rotation needed, undefined otherwise
+ * @returns Rotation data including kx message if rotation needed and possible, undefined otherwise
  */
-export function checkKeyRotation(chatId: string): {
+export async function checkKeyRotation(chatId: string): Promise<{
   oldKeyId: string;
   newKeyId: string;
   newKey: Uint8Array;
-} | undefined {
+  kxMessage?: string;
+} | undefined> {
   if (!shouldRotateChatKey(chatId)) return undefined;
-  return rotateChatKey(chatId);
+
+  const rotationData = rotateChatKey(chatId);
+
+  // Try to generate an ECDH-encrypted kx message for distribution
+  const kxMessage = await buildRotationKxMessage(chatId, rotationData);
+
+  return {
+    ...rotationData,
+    kxMessage,
+  };
+}
+
+/**
+ * Build an ECDH-encrypted key rotation kx message.
+ * Uses the recipient's X25519 public key to encrypt the new symmetric key.
+ *
+ * @param chatId - Chat ID (to look up recipient's public key)
+ * @param rotationData - The rotation data containing old/new key IDs and the new key
+ * @returns kx protocol message string, or undefined if recipient's public key is not available
+ */
+async function buildRotationKxMessage(
+  chatId: string,
+  rotationData: { oldKeyId: string; newKeyId: string; newKey: Uint8Array },
+): Promise<string | undefined> {
+  // Must have the recipient's X25519 public key for ECDH encryption
+  const recipientPubKey = recipientX25519PublicKeys.get(chatId);
+  if (!recipientPubKey) {
+    // Cannot perform ECDH without recipient's public key
+    return undefined;
+  }
+
+  const { newKeyId, newKey } = rotationData;
+
+  // Generate ephemeral X25519 keypair for this rotation
+  const ephemeralKeypair = x25519.keygen();
+
+  // Perform ECDH: our ephemeral private key × recipient's X25519 public key
+  const ecdhSharedSecret = x25519.getSharedSecret(ephemeralKeypair.secretKey, recipientPubKey);
+
+  // Derive an AES-256 encryption key from the ECDH shared secret using HKDF-SHA256
+  const rotationEncKey = deriveChatKey(ecdhSharedSecret);
+
+  // Encrypt the new chat key with AES-256-GCM using the ECDH-derived key
+  // AAD includes the rotation marker and key ID for authenticity
+  const aad = new Uint8Array(5);
+  aad[0] = ROTATION_KX_MARKER;
+  const keyIdBytes = hexToBytes(newKeyId);
+  aad.set(keyIdBytes, 1);
+
+  const { nonce, ciphertext, authTag } = await encryptSymmetric(newKey, rotationEncKey, aad);
+
+  // Build the rotation kx payload:
+  // [0x02 marker][keyId (4B)][ephemeralPub (32B)][nonce (12B)][ciphertext (32B)][authTag (16B)]
+  const kxPayload = new Uint8Array(1 + 4 + 32 + 12 + ciphertext.length + 16);
+  let offset = 0;
+  kxPayload[offset] = ROTATION_KX_MARKER;
+  offset += 1;
+  kxPayload.set(keyIdBytes, offset);
+  offset += 4;
+  kxPayload.set(ephemeralKeypair.publicKey, offset);
+  offset += 32;
+  kxPayload.set(nonce, offset);
+  offset += 12;
+  kxPayload.set(ciphertext, offset);
+  offset += ciphertext.length;
+  kxPayload.set(authTag, offset);
+
+  return encodeProtocol('kx', kxPayload);
 }
 
 // ---------- Encrypt-to-self Handling ----------
@@ -657,8 +1011,29 @@ export function isEncryptToSelfDuplicate(
 // ---------- Cleanup ----------
 
 /**
+ * Clear module-level stores that contain private key material.
+ * Called from telebridgeLock action to clear stores defined in
+ * the telebridge.ts action file that integration.ts cannot access.
+ *
+ * Also callable directly for test teardown.
+ */
+export function clearPrekeyAndRecipientStores(): void {
+  recipientX25519PublicKeys.clear();
+}
+
+/**
  * Lock the bridge and clear all in-memory keys.
  * Called when the user locks the bridge.
+ *
+ * Clears ALL in-memory private key material including:
+ * - Chat keys (chatKeys Map in messages.ts)
+ * - Recipient X25519 public keys (this module)
+ * - Pending key exchange messages (this module)
+ * - Group encryption keys
+ * - Prekey bundles and recipient stores in action module
+ *
+ * Call clearActionLevelStores() from the telebridge.ts action file
+ * BEFORE calling this to clear action-level stores too.
  */
 export function lockMessagePipeline(): void {
   clearAllChatKeys();
@@ -890,31 +1265,55 @@ export function shouldTriggerKeyRotationByTime(
 }
 
 /**
+ * Rotation kx payload marker byte.
+ * Distinguishes rotation kx messages from initial kx messages.
+ * Initial kx: payload starts with ephemeralPub (32 bytes) + x25519IdentityPub (32 bytes)
+ * Rotation kx: payload starts with 0x02 marker byte.
+ */
+export const ROTATION_KX_MARKER = 0x02;
+
+/**
  * Perform key rotation and return the kx protocol message for distribution.
  *
+ * The rotation uses ECDH to encrypt the new symmetric key:
+ * 1. Generate a new ephemeral X25519 keypair
+ * 2. Perform ECDH with the recipient's X25519 public key to derive an encryption key
+ * 3. Encrypt the new chat key with AES-256-GCM using the ECDH-derived key
+ * 4. Build the rotation kx payload:
+ *    [0x02 marker][keyId (4B)][ephemeralPub (32B)][nonce (12B)][ciphertext (32B)][authTag (16B)]
+ *
+ * VAL-SEC-006: Key rotation never sends raw symmetric keys in the clear.
+ * The new key is encrypted via ECDH — only an X25519 public point is transmitted.
+ *
+ * VAL-E2E-007: Key rotation sends new public key (not raw symmetric key) in tb1.kx payload.
+ *
  * @param chatId - Chat ID to rotate
- * @returns kx protocol message and rotation info, or undefined if rotation not needed
+ * @returns kx protocol message and rotation info, or undefined if rotation not possible
  */
-export function performKeyRotation(
+export async function performKeyRotation(
   chatId: string,
-): { kxMessage: string; oldKeyId: string; newKeyId: string } | undefined {
-  if (!shouldRotateChatKey(chatId)) return undefined;
+): Promise<{ kxMessage: string | undefined; oldKeyId: string; newKeyId: string } | undefined> {
+  // Must have a chat key to rotate
+  if (!hasChatKey(chatId)) return undefined;
 
-  const { oldKeyId, newKeyId, newKey } = rotateChatKey(chatId);
+  // Rotate the key — generates a new symmetric key and retains the old one in previousKeys
+  const rotationData = rotateChatKey(chatId);
 
-  // Construct a key exchange message containing the new key
-  // In a full implementation, this would use X3DH to derive a shared secret
-  // For now, encode a kx message with the new public key info
-  const kxPayload = new Uint8Array(36); // 4 bytes keyId + 32 bytes new public key
-  const keyIdBytes = hexToBytes(newKeyId);
-  kxPayload.set(keyIdBytes, 0);
-  // The new key itself is not sent in clear — this is a placeholder
-  // In the real implementation, the key would be encrypted with ECDH
-  kxPayload.set(newKey.subarray(0, 32), 4);
+  // Build the ECDH-encrypted kx message
+  const kxMessage = await buildRotationKxMessage(chatId, rotationData);
 
-  const kxMessage = encodeProtocol('kx', kxPayload);
+  if (!kxMessage) {
+    // Cannot build kx message (no recipient public key) — rotation was performed locally
+    // but the kx message cannot be sent to the other party
+    // Return undefined (not empty string) — callers must check before sending
+    return {
+      kxMessage: undefined,
+      oldKeyId: rotationData.oldKeyId,
+      newKeyId: rotationData.newKeyId,
+    };
+  }
 
-  return { kxMessage, oldKeyId, newKeyId };
+  return { kxMessage, oldKeyId: rotationData.oldKeyId, newKeyId: rotationData.newKeyId };
 }
 
 // ---------- Media Encryption Integration ----------

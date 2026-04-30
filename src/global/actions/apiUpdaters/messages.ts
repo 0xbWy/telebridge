@@ -136,6 +136,18 @@ addActionHandler('apiUpdate', (global, actions, update): ActionReturnType => {
 
       const isLocal = isMessageLocal(message);
 
+      // TeleBridge: Dispatch key exchange completion when incoming tb1.kx message detected
+      if (!isLocal) {
+        const messageText = message.content?.text?.text;
+        if (typeof messageText === 'string' && messageText.startsWith('tb1.kx.')) {
+          // eslint-disable-next-line @typescript-eslint/no-require-imports
+          const integ = require('../../../telebridge/integration') as typeof import('../../../telebridge/integration');
+          if (integ.isKeyExchangeMessage(messageText)) {
+            actions.telebridgeCompleteKeyExchange({ chatId, kxMessage: messageText });
+          }
+        }
+      }
+
       Object.values(global.byTabId).forEach(({ id: tabId }) => {
         // Force update for last message on drafted messages to prevent flickering
         if (isLocal && wasDrafted) {

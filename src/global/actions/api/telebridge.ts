@@ -134,6 +134,10 @@ addActionHandler('telebridgeUnlock', async (global, actions, payload): Promise<v
 addActionHandler('telebridgeLock', (global): ActionReturnType => {
   // Clear in-memory chat keys when locking
   // V1 Bug #5: no plaintext keys in memory when locked
+
+  // Clear action-level stores first (prekeyBundleStore, recipientX25519PubStore)
+  clearActionLevelStores();
+
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const integ = require('../../../telebridge/integration') as typeof import('../../../telebridge/integration');
   integ.lockMessagePipeline();
@@ -219,6 +223,19 @@ const prekeyBundleStore = new Map<string, {
  * Populated during key exchange initiation from the recipient's prekey bundle.
  */
 const recipientX25519PubStore = new Map<string, string>();
+
+/**
+ * Clear module-level stores containing private key material.
+ * Called by telebridgeLock action before lockMessagePipeline()
+ * to clear stores that are defined in this action module.
+ *
+ * This is a security requirement: private key material must not remain
+ * in memory when the bridge is locked.
+ */
+export function clearActionLevelStores(): void {
+  prekeyBundleStore.clear();
+  recipientX25519PubStore.clear();
+}
 
 addActionHandler('telebridgeStartKeyExchange', (global, actions, payload): ActionReturnType => {
   const { chatId, recipientPrekeyBundleBase64 } = payload as {
@@ -394,7 +411,8 @@ addActionHandler('telebridgeCompleteKeyExchange', (global, actions, payload): Ac
     const theirX25519IdentityPub = decoded.payload.slice(32, 64);
 
     // Look up our own signed prekey for this chat
-    // If we have a prekey bundle store entry, use it; otherwise generate one on-the-fly
+    // If we have a prekey bundle store entry, use it; otherwise FAIL
+    // (Do NOT generate ad-hoc unverifiable prekeys — this is a security requirement)
     const storedData = prekeyBundleStore.get(chatId);
     let signedPrekey: import('../../../telebridge/crypto/keyExchange').SignedPrekey;
     let consumedOtpk: import('../../../telebridge/crypto/identity').X25519Keypair | undefined;
@@ -407,8 +425,12 @@ addActionHandler('telebridgeCompleteKeyExchange', (global, actions, payload): Ac
         consumedOtpk = otpkEntry.value[1];
       }
     } else {
-      // Generate a signed prekey on-the-fly for this chat
-      signedPrekey = kx.generateSignedPrekey(identity.ed25519.signingBytes);
+      // No stored prekey bundle — fail rather than generate unverifiable ad-hoc prekeys.
+      // The responder must have called telebridgeGeneratePrekeyBundle before
+      // the initiator can start a key exchange with them.
+      global = setChatKeyExchangeState(global, chatId, 'failed');
+      global = setBridgeError(global, 'TeleBridgeNoPrekeyBundle');
+      return global;
     }
 
     // Complete the key exchange using X3DH
@@ -559,17 +581,20 @@ addActionHandler('telebridgeIncrementMessageCount', (global, actions, payload): 
   }));
 });
 
-addActionHandler('telebridgeRotateChatKey', (global, actions, payload): ActionReturnType => {
+addActionHandler('telebridgeRotateChatKey', async (global, actions, payload): Promise<void> => {
   const { chatId } = payload;
 
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const integration = require('../../../telebridge/integration') as typeof import('../../../telebridge/integration');
 
-  const rotation = integration.checkKeyRotation(chatId);
+  const rotation = await integration.checkKeyRotation(chatId);
   if (rotation) {
     // Key was rotated — send a kx message to the other party
-    // TODO: Send key exchange message via Telegram
-    // For now, update the state to reflect the rotation
+    if (rotation.kxMessage) {
+      // Store the kx message for transport to send
+      integration.setPendingKeyExchangeMessage(chatId, rotation.kxMessage);
+    }
+    // Update the state to reflect the rotation
     global = getGlobal();
     global = setChatEncryptionState(global, chatId, (chatState) => ({
       ...chatState,
@@ -577,10 +602,7 @@ addActionHandler('telebridgeRotateChatKey', (global, actions, payload): ActionRe
       lastKeyExchangeAt: Date.now(),
     }));
     setGlobal(global);
-    return global;
   }
-
-  return global;
 });
 
 // ---------- Group Encryption Actions ----------
