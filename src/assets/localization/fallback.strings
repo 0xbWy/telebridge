@@ -335,7 +335,7 @@
 "ChatListEmptyChatListFilterText" = "No chats currently belong to this folder.";
 "ChatEmptyChat" = "No messages here yet";
 "ChatListEmptyChatListEditFilter" = "Edit Folder";
-"UpdateTelegram" = "Update TeleBridge";
+"UpdateTeleBridge" = "Update TeleBridge";
 "AriaLabelOpenMenu" = "Open menu";
 "AriaLabelBackChatList" = "Return to chat list";
 "SettingsTipsUsername" = "TelegramTips";
@@ -345,9 +345,9 @@
 "Settings" = "Settings";
 "SettingsDisableNightTheme" = "Disable night mode";
 "SettingsEnableNightTheme" = "Enable night mode";
-"TelegramPremium" = "TeleBridge Premium";
+"TeleBridgePremium" = "TeleBridge Premium";
 "New" = "New";
-"TelegramFeatures" = "TeleBridge Features";
+"TeleBridgeFeatures" = "TeleBridge Features";
 "ShortcutsControllerOthersLockByPasscode" = "Lock by Passcode";
 "GroupAddMembers" = "Add Members";
 "SendMessageTo" = "Send message to…";
@@ -507,7 +507,7 @@
 "AccDescrGoBack" = "Go back";
 "SureLogout" = "Are you sure you want to log out?";
 "AccountSettingsLogout" = "Log Out";
-"TelegramGeneralSettingsViewController" = "General Settings";
+"TeleBridgeGeneralSettingsViewController" = "General Settings";
 "UserInfoNotificationsEnabled" = "Enabled";
 "UserInfoNotificationsDisabled" = "Disabled";
 "AutodownloadPrivateChats" = "Private Chats";
@@ -605,8 +605,8 @@
 "LimitFree" = "Free";
 "LimitPremium" = "Premium";
 "SubscribeToPremium" = "Subscribe for {price} per month";
-"TelegramPremiumUserDialogTitle" = "**{user}** is a subscriber of TeleBridge Premium.";
-"TelegramPremiumSubscribedTitle" = "You are all set!";
+"TeleBridgePremiumUserDialogTitle" = "**{user}** is a subscriber of TeleBridge Premium.";
+"TeleBridgePremiumSubscribedTitle" = "You are all set!";
 "AboutPremiumDescription" = "While the free version of TeleBridge already gives its users more than any other messaging application, **TeleBridge Premium** pushes its capabilities even further.";
 "AboutPremiumDescription2" = "**TeleBridge Premium** is a paid option, because most Premium Features require additional expenses from TeleBridge to third parties such as data center providers and server manufacturers. Contributions from **TeleBridge Premium** users allow us to cover such costs and also help TeleBridge stay free for everyone.";
 "OpenUrlTitle" = "Open Link";
@@ -689,7 +689,7 @@
 "MenuStars" = "My Stars";
 "MenuTon" = "My TON";
 "MenuSendGift" = "Send a Gift";
-"MenuTelegramFaq" = "TeleBridge FAQ";
+"MenuTeleBridgeFaq" = "TeleBridge FAQ";
 "MenuPrivacyPolicy" = "Privacy Policy";
 "MenuAskText" = "Please note that TeleBridge Support is done by volunteers. We try to respond as quickly as possible, but it may take a while.\n\nPlease take a look at the TeleBridge FAQ: it has important troubleshooting tips and answers to most questions.";
 "SettingsPerformanceSliderTitle" = "Animation Level";
@@ -1257,9 +1257,9 @@
 "CaptionsLimitSubtitle" = "Use longer descriptions for your photos and videos";
 "FoldersLimitSubtitle" = "Organize your chats into {count} folders";
 "ChatPerFolderLimitSubtitle" = "Add up to {count} chats into each of your folders";
-"TelegramPremiumUserDialogSubtitle" = "Owners of **TeleBridge Premium** accounts have exclusive access to multiple additional features.";
-"TelegramPremiumSubscribedSubtitle" = "Thank you for subscribing to **TeleBridge Premium**.\nHere’s what is now unlocked.";
-"TelegramPremiumSubtitle" = "Go **beyond the limits** and **unlock dozens of exclusive** features by subscribing to **TeleBridge Premium**.";
+"TeleBridgePremiumUserDialogSubtitle" = "Owners of **TeleBridge Premium** accounts have exclusive access to multiple additional features.";
+"TeleBridgePremiumSubscribedSubtitle" = "Thank you for subscribing to **TeleBridge Premium**.\nHere’s what is now unlocked.";
+"TeleBridgePremiumSubtitle" = "Go **beyond the limits** and **unlock dozens of exclusive** features by subscribing to **TeleBridge Premium**.";
 "EditMessageAriaLabel" = "Save edited message";
 "Emoji1" = "Emoji & People";
 "Emoji2" = "Animals and nature";
@@ -1275,7 +1275,7 @@
 "ConversationViewBot" = "VIEW BOT";
 "ConversationViewPost" = "VIEW POST";
 "ConversationViewChannel" = "VIEW CHANNEL";
-"Telegram" = "TeleBridge";
+"TeleBridge" = "TeleBridge";
 "ChatListFilterAddToFolder" = "Add to folder...";
 "ChatListUnpinFromTop" = "Unpin from Top";
 "ChatListPinToTop" = "Pin to Top";
@@ -1511,8 +1511,8 @@
 "AriaMenuDisableNightMode" = "Disable night mode";
 "AriaSettingsEditProfilePhoto" = "Edit profile photo";
 "MenuUIFeaturesSwitch" = "UI Features";
-"MenuTelegramFeatures" = "TeleBridge Features";
-"TelegramFeaturesUsername" = "TelegramTips";
+"MenuTeleBridgeFeatures" = "TeleBridge Features";
+"TeleBridgeFeaturesUsername" = "TelegramTips";
 "RemoveEffect" = "Remove effect";
 "ReplyInPrivateMessage" = "Reply In Private Message";
 "ProfileOpenAppAbout" = "By launching this mini app, you agree to the {terms}.";
@@ -1780,7 +1780,7 @@
 "PrivacyDisplayGift" = "Gift";
 "SendDisallowError" = "User is not accepting gifts";
 "PrivacyDisplayGiftIconInChats" = "Display the {icon} {gift} in the message input field for both participants in all chats.";
-"PrivacySubscribeToTelegramPremium" = "Subscribe to **TeleBridge Premium** to select this option.";
+"PrivacySubscribeToTeleBridgePremium" = "Subscribe to **TeleBridge Premium** to select this option.";
 "PrivacyDisableLimitedEditionStarGifts" = "Disable Limited-Edition Star Gifts";
 "PrivacyEnableLimitedEditionStarGifts" = "Enable Limited-Edition Star Gifts";
 "PrivacyDisableUnlimitedStarGifts" = "Disable Unlimited Star Gifts";
@@ -2397,9 +2397,9 @@
 "MessageActionPollDeleteAnswer" = "{peer} removed \"{option}\" from the poll.";
 "MessageActionPollDeleteAnswerYou" = "You removed \"{option}\" from the poll.";
 "PremiumMore" = "More";
-"SubscribeToTelegramPremiumForToggleTask" = "Subscribe to **TeleBridge Premium** to toggle tasks";
-"SubscribeToTelegramPremiumForCreateToDo" = "Subscribe to **TeleBridge Premium** to create Checklists";
-"SubscribeToTelegramPremiumForAppendToDo" = "Subscribe to **TeleBridge Premium** to add tasks";
+"SubscribeToTeleBridgePremiumForToggleTask" = "Subscribe to **TeleBridge Premium** to toggle tasks";
+"SubscribeToTeleBridgePremiumForCreateToDo" = "Subscribe to **TeleBridge Premium** to create Checklists";
+"SubscribeToTeleBridgePremiumForAppendToDo" = "Subscribe to **TeleBridge Premium** to add tasks";
 "HintTodoListTasksCount2_one" = "You can add {count} more task";
 "HintTodoListTasksCount2_other" = "You can add {count} more tasks";
 "ToDoListErrorChooseTitle" = "Please enter a title.";
@@ -2472,8 +2472,8 @@
 "TitleRating" = "Rating";
 "RatingReflectsActivity" = "This rating reflects **{name}'s** activity on TeleBridge. It is based on:";
 "RatingYourReflectsActivity" = "This rating reflects your activity on TeleBridge. It is based on:";
-"RatingGiftsFromTelegram" = "Gifts from TeleBridge";
-"RatingGiftsFromTelegramDesc" = "100% of the Stars spent on gifts purchased from TeleBridge.";
+"RatingGiftsFromTeleBridge" = "Gifts from TeleBridge";
+"RatingGiftsFromTeleBridgeDesc" = "100% of the Stars spent on gifts purchased from TeleBridge.";
 "RatingGiftsAndPostsFromUsers" = "Gifts and Posts from Users";
 "RatingGiftsAndPostsFromUsersDesc" = "20% of the Stars spent on gifts or posts from users and channels.";
 "RatingRefundsAndConversions" = "Refunds and Conversions";
@@ -2492,9 +2492,9 @@
 "ContextMenuHintMouse" = "To edit or reply, close this menu. Then right click on a message.";
 "ContextMenuHintTouch" = "To edit or reply, close this menu. Then long tap on a message.";
 "GiftValueForSaleOnFragment" = "for sale on Fragment";
-"GiftValueForSaleOnTelegram" = "for sale on TeleBridge";
+"GiftValueForSaleOnTeleBridge" = "for sale on TeleBridge";
 "GiftAuctionForSaleOnFragment" = "{count} for sale on Fragment >";
-"GiftAuctionForSaleOnTelegram" = "{count} for sale on TeleBridge >";
+"GiftAuctionForSaleOnTeleBridge" = "{count} for sale on TeleBridge >";
 "EmbeddedMessageNoCaption" = "Caption removed";
 "EditMedia" = "Edit Media";
 "Draw" = "Draw";
@@ -3101,3 +3101,13 @@
 "TeleBridgeLoginNeededUnlock" = "Unlock TeleBridge to manage encryption.";
 "TeleBridgeStartEncryptionMenu" = "Start Encryption";
 "TeleBridgeStartEncryptionMenuDescription" = "Begin encrypting messages in this chat.";
+
+"BoostingTeleBridgePremiumCountPlural" = "{count} TeleBridge Premium subscriptions";
+"BoostingTeleBridgePremiumFor" = "TeleBridge Premium for {value}";
+"GiftTeleBridgePremiumOrStarsTitle" = "TeleBridge Premium or Stars";
+"TeleBridgePremiumUserGiftedPremiumOutboundDialogSubtitle" = "You gifted **TeleBridge Premium** to {user}";
+"TeleBridgePremiumUserGiftedPremiumDialogSubtitle" = "**{user}** gifted you TeleBridge Premium";
+"TeleBridgePremiumUserStatusDialogSubtitle" = "This user has TeleBridge Premium";
+"TeleBridgeStars" = "TeleBridge Stars";
+"TeleBridgeStarsInfo" = "TeleBridge Stars are a digital currency you can use to purchase digital goods and services on TeleBridge.";
+"TeleBridgeStarsGift" = "Gift Stars";

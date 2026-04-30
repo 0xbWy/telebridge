@@ -57,7 +57,7 @@ const GiftRecipientPicker = ({
       className={styles.root}
       isOpen={isOpen}
       onClose={closeGiftRecipientPicker}
-      title={oldLang('GiftTelegramPremiumOrStarsTitle')}
+      title={oldLang('GiftTeleBridgePremiumOrStarsTitle')}
       hasCloseButton
       shouldAdaptToSearch
       withFixedHeight

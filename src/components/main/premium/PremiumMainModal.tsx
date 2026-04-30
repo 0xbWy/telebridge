@@ -319,8 +319,8 @@ const PremiumMainModal: FC<OwnProps & StateProps> = ({
 
     return renderText(
       fromUser
-        ? oldLang('TelegramPremiumUserDialogTitle', getUserFullName(fromUser))
-        : oldLang(isPremium ? 'TelegramPremiumSubscribedTitle' : 'TelegramPremium'),
+        ? oldLang('TeleBridgePremiumUserDialogTitle', getUserFullName(fromUser))
+        : oldLang(isPremium ? 'TeleBridgePremiumSubscribedTitle' : 'TeleBridgePremium'),
       ['simple_markdown', 'emoji'],
     );
   }
@@ -334,17 +334,17 @@ const PremiumMainModal: FC<OwnProps & StateProps> = ({
 
     if (isGift) {
       return fromUser?.id === currentUserId
-        ? oldLang('TelegramPremiumUserGiftedPremiumOutboundDialogSubtitle', getUserFullName(toUser))
-        : oldLang('TelegramPremiumUserGiftedPremiumDialogSubtitle');
+        ? oldLang('TeleBridgePremiumUserGiftedPremiumOutboundDialogSubtitle', getUserFullName(toUser))
+        : oldLang('TeleBridgePremiumUserGiftedPremiumDialogSubtitle');
     }
 
     if (fromUserStatusSet) {
-      return oldLang('TelegramPremiumUserStatusDialogSubtitle');
+      return oldLang('TeleBridgePremiumUserStatusDialogSubtitle');
     }
 
     return fromUser
-      ? oldLang('TelegramPremiumUserDialogSubtitle')
-      : oldLang(isPremium ? 'TelegramPremiumSubscribedSubtitle' : 'TelegramPremiumSubtitle');
+      ? oldLang('TeleBridgePremiumUserDialogSubtitle')
+      : oldLang(isPremium ? 'TeleBridgePremiumSubscribedSubtitle' : 'TeleBridgePremiumSubtitle');
   }
 
   function renderHeader() {
@@ -441,7 +441,7 @@ const PremiumMainModal: FC<OwnProps & StateProps> = ({
             {!isPremium && !isGift && renderSubscriptionOptions()}
             <div className={buildClassName(styles.header, isHeaderHidden && styles.hiddenHeader)}>
               <h2 className={styles.premiumHeaderText}>
-                {oldLang('TelegramPremium')}
+                {oldLang('TeleBridgePremium')}
               </h2>
             </div>
             <div className={buildClassName(styles.list, isPremium && styles.noButton)}>

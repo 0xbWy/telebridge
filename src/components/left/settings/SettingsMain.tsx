@@ -110,7 +110,7 @@ const SettingsMain: FC<OwnProps & StateProps> = ({
 
           onClick={() => openSettingsScreen({ screen: SettingsScreens.General })}
         >
-          {lang('TelegramGeneralSettingsViewController')}
+          {lang('TeleBridgeGeneralSettingsViewController')}
         </ListItem>
         <ListItem
           icon="animations"
@@ -187,7 +187,7 @@ const SettingsMain: FC<OwnProps & StateProps> = ({
 
             onClick={() => openPremiumModal()}
           >
-            {lang('TelegramPremium')}
+            {lang('TeleBridgePremium')}
           </ListItem>
         )}
         <ListItem
@@ -240,7 +240,7 @@ const SettingsMain: FC<OwnProps & StateProps> = ({
 
           onClick={() => openUrl({ url: FAQ_URL })}
         >
-          {lang('MenuTelegramFaq')}
+          {lang('MenuTeleBridgeFaq')}
         </ListItem>
         <ListItem
           icon="privacy-policy"

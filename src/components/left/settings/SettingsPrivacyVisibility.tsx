@@ -65,7 +65,7 @@ const SettingsPrivacyVisibility: FC<OwnProps & StateProps> = ({
   const handleShowGiftIconInChats = useLastCallback(() => {
     if (!isCurrentUserPremium) {
       showNotification({
-        message: lang('PrivacySubscribeToTelegramPremium'),
+        message: lang('PrivacySubscribeToTeleBridgePremium'),
         action: {
           action: 'openPremiumModal',
           payload: {},

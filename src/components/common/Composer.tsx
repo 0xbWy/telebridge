@@ -1411,7 +1411,7 @@ const Composer = ({
   const handleTodoListCreate = useLastCallback(() => {
     if (!isCurrentUserPremium) {
       showNotification({
-        message: lang('SubscribeToTelegramPremiumForCreateToDo'),
+        message: lang('SubscribeToTeleBridgePremiumForCreateToDo'),
         action: {
           action: 'openPremiumModal',
           payload: { initialSection: 'todo' },

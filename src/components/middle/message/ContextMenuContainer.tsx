@@ -482,7 +482,7 @@ const ContextMenuContainer: FC<OwnProps & StateProps> = ({
   const handleAppendTodoList = useLastCallback(() => {
     if (!isCurrentUserPremium) {
       showNotification({
-        message: lang('SubscribeToTelegramPremiumForAppendToDo'),
+        message: lang('SubscribeToTeleBridgePremiumForAppendToDo'),
         action: {
           action: 'openPremiumModal',
           payload: { initialSection: 'todo' },

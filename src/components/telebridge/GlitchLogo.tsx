@@ -13,8 +13,8 @@ const GlitchLogo = ({ className }: OwnProps) => {
 
   return (
     <div className={`${styles.container}${className ? ` ${className}` : ''}`} role="img" aria-label="TeleBridge">
-      <span className={styles.glitchText} data-text={lang('Telegram')}>
-        {lang('Telegram')}
+      <span className={styles.glitchText} data-text={lang('TeleBridge')}>
+        {lang('TeleBridge')}
       </span>
     </div>
   );

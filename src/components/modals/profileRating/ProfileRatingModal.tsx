@@ -203,10 +203,10 @@ const ProfileRatingModal = ({
     lang, handleShowFuture, handleShowCurrent]);
 
   const listItemData = [
-    ['closed-gift', lang('RatingGiftsFromTelegram'), (
+    ['closed-gift', lang('RatingGiftsFromTeleBridge'), (
       <span>
         {renderBadge('added')}
-        {lang('RatingGiftsFromTelegramDesc')}
+        {lang('RatingGiftsFromTeleBridgeDesc')}
       </span>
     )],
     ['user-stars', lang('RatingGiftsAndPostsFromUsers'), (

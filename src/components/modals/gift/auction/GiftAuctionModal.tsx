@@ -300,7 +300,7 @@ const GiftAuctionModal = ({ modal, auctionState }: OwnProps & StateProps) => {
         )}
         {canBuyOnTelegram && (
           <Link className={styles.itemsBoughtLink} isPrimary onClick={handleOpenTelegramMarket}>
-            {lang('GiftAuctionForSaleOnTelegram', {
+            {lang('GiftAuctionForSaleOnTeleBridge', {
               count: giftSticker ? (
                 <>
                   {lang.number(state.listedCount!)}

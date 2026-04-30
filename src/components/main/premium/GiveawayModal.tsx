@@ -149,7 +149,7 @@ const GiveawayModal: FC<OwnProps & StateProps> = ({
 
   if (isStarsGiftEnabled) {
     TYPE_OPTIONS.push({
-      name: 'TelegramStars',
+      name: 'TeleBridgeStars',
       text: 'BoostingWinnersRandomly',
       value: 'stars_giveaway',
       img: GiftStar,
@@ -712,7 +712,7 @@ const GiveawayModal: FC<OwnProps & StateProps> = ({
             <div className={styles.info}>
               <h3 className={styles.title}>
                 {dataStarsPrepaidGiveaway ? lang('Giveaway.Stars.Prepaid.Title', dataStarsPrepaidGiveaway?.stars)
-                  : lang('BoostingTelegramPremiumCountPlural', dataPrepaidGiveaway!.quantity)}
+                  : lang('BoostingTeleBridgePremiumCountPlural', dataPrepaidGiveaway!.quantity)}
               </h3>
               <p className={styles.month}>
                 {dataStarsPrepaidGiveaway ? lang('Giveaway.Stars.Prepaid.Desc', dataStarsPrepaidGiveaway?.quantity)

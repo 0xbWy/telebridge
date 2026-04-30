@@ -136,7 +136,7 @@ const LeftSideMenuItems = ({
   });
 
   const handleOpenTipsChat = useLastCallback(() => {
-    openChatByUsername({ username: lang('TelegramFeaturesUsername') });
+    openChatByUsername({ username: lang('TeleBridgeFeaturesUsername') });
   });
 
   const handleBugReportClick = useLastCallback(() => {
@@ -229,7 +229,7 @@ const LeftSideMenuItems = ({
               icon="help"
               onClick={handleOpenTipsChat}
             >
-              {lang('MenuTelegramFeatures')}
+              {lang('MenuTeleBridgeFeatures')}
             </MenuItem>
             <MenuItem
               icon="bug"

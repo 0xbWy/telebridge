@@ -293,7 +293,7 @@ export interface LangPair {
   'ChatListEmptyChatListFilterText': undefined;
   'ChatEmptyChat': undefined;
   'ChatListEmptyChatListEditFilter': undefined;
-  'UpdateTelegram': undefined;
+  'UpdateTeleBridge': undefined;
   'AriaLabelOpenMenu': undefined;
   'AriaLabelBackChatList': undefined;
   'SettingsTipsUsername': undefined;
@@ -303,9 +303,9 @@ export interface LangPair {
   'Settings': undefined;
   'SettingsDisableNightTheme': undefined;
   'SettingsEnableNightTheme': undefined;
-  'TelegramPremium': undefined;
+  'TeleBridgePremium': undefined;
   'New': undefined;
-  'TelegramFeatures': undefined;
+  'TeleBridgeFeatures': undefined;
   'ShortcutsControllerOthersLockByPasscode': undefined;
   'GroupAddMembers': undefined;
   'SendMessageTo': undefined;
@@ -458,7 +458,7 @@ export interface LangPair {
   'AccDescrGoBack': undefined;
   'SureLogout': undefined;
   'AccountSettingsLogout': undefined;
-  'TelegramGeneralSettingsViewController': undefined;
+  'TeleBridgeGeneralSettingsViewController': undefined;
   'UserInfoNotificationsEnabled': undefined;
   'UserInfoNotificationsDisabled': undefined;
   'AutodownloadPrivateChats': undefined;
@@ -544,7 +544,7 @@ export interface LangPair {
   'IncreaseLimit': undefined;
   'LimitFree': undefined;
   'LimitPremium': undefined;
-  'TelegramPremiumSubscribedTitle': undefined;
+  'TeleBridgePremiumSubscribedTitle': undefined;
   'AboutPremiumDescription': undefined;
   'AboutPremiumDescription2': undefined;
   'OpenUrlTitle': undefined;
@@ -608,7 +608,7 @@ export interface LangPair {
   'MenuStars': undefined;
   'MenuTon': undefined;
   'MenuSendGift': undefined;
-  'MenuTelegramFaq': undefined;
+  'MenuTeleBridgeFaq': undefined;
   'MenuPrivacyPolicy': undefined;
   'MenuAskText': undefined;
   'SettingsPerformanceSliderTitle': undefined;
@@ -1063,9 +1063,9 @@ export interface LangPair {
   'ChatPerFolderLimitTitle': undefined;
   'BioLimitSubtitle': undefined;
   'CaptionsLimitSubtitle': undefined;
-  'TelegramPremiumUserDialogSubtitle': undefined;
-  'TelegramPremiumSubscribedSubtitle': undefined;
-  'TelegramPremiumSubtitle': undefined;
+  'TeleBridgePremiumUserDialogSubtitle': undefined;
+  'TeleBridgePremiumSubscribedSubtitle': undefined;
+  'TeleBridgePremiumSubtitle': undefined;
   'EditMessageAriaLabel': undefined;
   'Emoji1': undefined;
   'Emoji2': undefined;
@@ -1080,7 +1080,7 @@ export interface LangPair {
   'ConversationViewBot': undefined;
   'ConversationViewPost': undefined;
   'ConversationViewChannel': undefined;
-  'Telegram': undefined;
+  'TeleBridge': undefined;
   'ChatListFilterAddToFolder': undefined;
   'ChatListUnpinFromTop': undefined;
   'ChatListPinToTop': undefined;
@@ -1280,8 +1280,8 @@ export interface LangPair {
   'AriaMenuDisableNightMode': undefined;
   'AriaSettingsEditProfilePhoto': undefined;
   'MenuUIFeaturesSwitch': undefined;
-  'MenuTelegramFeatures': undefined;
-  'TelegramFeaturesUsername': undefined;
+  'MenuTeleBridgeFeatures': undefined;
+  'TeleBridgeFeaturesUsername': undefined;
   'RemoveEffect': undefined;
   'ReplyInPrivateMessage': undefined;
   'ProfileOpenAppTerms': undefined;
@@ -1441,7 +1441,7 @@ export interface LangPair {
   'PrivacyDisplayGiftsButton': undefined;
   'PrivacyDisplayGift': undefined;
   'SendDisallowError': undefined;
-  'PrivacySubscribeToTelegramPremium': undefined;
+  'PrivacySubscribeToTeleBridgePremium': undefined;
   'PrivacyDisableLimitedEditionStarGifts': undefined;
   'PrivacyEnableLimitedEditionStarGifts': undefined;
   'PrivacyDisableUnlimitedStarGifts': undefined;
@@ -1771,9 +1771,9 @@ export interface LangPair {
   'TitleYourToDoList': undefined;
   'MenuButtonAppendTodoList': undefined;
   'PremiumMore': undefined;
-  'SubscribeToTelegramPremiumForToggleTask': undefined;
-  'SubscribeToTelegramPremiumForCreateToDo': undefined;
-  'SubscribeToTelegramPremiumForAppendToDo': undefined;
+  'SubscribeToTeleBridgePremiumForToggleTask': undefined;
+  'SubscribeToTeleBridgePremiumForCreateToDo': undefined;
+  'SubscribeToTeleBridgePremiumForAppendToDo': undefined;
   'ToDoListErrorChooseTitle': undefined;
   'ToDoListErrorChooseTasks': undefined;
   'PremiumPreviewTodo': undefined;
@@ -1820,8 +1820,8 @@ export interface LangPair {
   'AllStoriesCategory': undefined;
   'TitleRating': undefined;
   'RatingYourReflectsActivity': undefined;
-  'RatingGiftsFromTelegram': undefined;
-  'RatingGiftsFromTelegramDesc': undefined;
+  'RatingGiftsFromTeleBridge': undefined;
+  'RatingGiftsFromTeleBridgeDesc': undefined;
   'RatingGiftsAndPostsFromUsers': undefined;
   'RatingGiftsAndPostsFromUsersDesc': undefined;
   'RatingRefundsAndConversions': undefined;
@@ -1835,7 +1835,7 @@ export interface LangPair {
   'ContextMenuHintMouse': undefined;
   'ContextMenuHintTouch': undefined;
   'GiftValueForSaleOnFragment': undefined;
-  'GiftValueForSaleOnTelegram': undefined;
+  'GiftValueForSaleOnTeleBridge': undefined;
   'EmbeddedMessageNoCaption': undefined;
   'EditMedia': undefined;
   'Draw': undefined;
@@ -2323,6 +2323,11 @@ export interface LangPair {
   'TeleBridgeLoginNeededUnlock': undefined;
   'TeleBridgeStartEncryptionMenu': undefined;
   'TeleBridgeStartEncryptionMenuDescription': undefined;
+  'GiftTeleBridgePremiumOrStarsTitle': undefined;
+  'TeleBridgePremiumUserStatusDialogSubtitle': undefined;
+  'TeleBridgeStars': undefined;
+  'TeleBridgeStarsInfo': undefined;
+  'TeleBridgeStarsGift': undefined;
 }
 
 export interface LangPairWithVariables<V = LangVariable> {
@@ -2456,7 +2461,7 @@ export interface LangPairWithVariables<V = LangVariable> {
   'SubscribeToPremium': {
     'price': V;
   };
-  'TelegramPremiumUserDialogTitle': {
+  'TeleBridgePremiumUserDialogTitle': {
     'user': V;
   };
   'OpenUrlText': {
@@ -3734,7 +3739,7 @@ export interface LangPairWithVariables<V = LangVariable> {
   'GiftAuctionForSaleOnFragment': {
     'count': V;
   };
-  'GiftAuctionForSaleOnTelegram': {
+  'GiftAuctionForSaleOnTeleBridge': {
     'count': V;
   };
   'GiftLockedMessage': {
@@ -3932,6 +3937,15 @@ export interface LangPairWithVariables<V = LangVariable> {
   };
   'TeleBridgeKeyChangeInGroupDescription': {
     'name': V;
+  };
+  'BoostingTeleBridgePremiumFor': {
+    'value': V;
+  };
+  'TeleBridgePremiumUserGiftedPremiumOutboundDialogSubtitle': {
+    'user': V;
+  };
+  'TeleBridgePremiumUserGiftedPremiumDialogSubtitle': {
+    'user': V;
   };
 }
 

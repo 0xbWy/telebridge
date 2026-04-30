@@ -80,7 +80,7 @@ const GiftCodeModal = ({
     const tableData: TableData = [
       [oldLang('BoostingFrom'), fromId ? { chatId: fromId } : oldLang('BoostingNoRecipient')],
       [oldLang('BoostingTo'), info.toId ? { chatId: info.toId } : oldLang('BoostingNoRecipient')],
-      [oldLang('BoostingGift'), oldLang('BoostingTelegramPremiumFor', formatCountdownDays(lang, info.days))],
+      [oldLang('BoostingGift'), oldLang('BoostingTeleBridgePremiumFor', formatCountdownDays(lang, info.days))],
     ];
     if (info.isFromGiveaway) {
       tableData.push([

@@ -196,9 +196,9 @@ const StarsBalanceModal = ({
         <ParticlesHeader
           model="swaying-star"
           color="gold"
-          title={starsNeeded ? oldLang('StarsNeededTitle', ongoingTransactionAmount) : oldLang('TelegramStars')}
+          title={starsNeeded ? oldLang('StarsNeededTitle', ongoingTransactionAmount) : oldLang('TeleBridgeStars')}
           description={renderText(
-            starsNeededText || oldLang('TelegramStarsInfo'),
+            starsNeededText || oldLang('TeleBridgeStarsInfo'),
             ['simple_markdown', 'emoji'],
           )}
           isDisabled={!isOpen}
@@ -220,7 +220,7 @@ const StarsBalanceModal = ({
             fluid
             onClick={openStarsGiftingPickerModalHandler}
           >
-            {oldLang('TelegramStarsGift')}
+            {oldLang('TeleBridgeStarsGift')}
           </Button>
         )}
         {areBuyOptionsShown && starsBalanceState?.topupOptions && (
@@ -360,7 +360,7 @@ const StarsBalanceModal = ({
           )}
         >
           <h2 className={styles.starHeaderText}>
-            {oldLang('TelegramStars')}
+            {oldLang('TeleBridgeStars')}
           </h2>
         </div>
         <div className={styles.section}>

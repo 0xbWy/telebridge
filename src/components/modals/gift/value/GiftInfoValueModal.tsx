@@ -161,7 +161,7 @@ const GiftInfoValueModal: FC<OwnProps> = ({
               sticker={giftAttributes.model!.sticker}
               size={FOOTER_STICKER_SIZE}
             />
-            {lang('GiftValueForSaleOnTelegram')}
+            {lang('GiftValueForSaleOnTeleBridge')}
           </Button>
         )}
       </div>

@@ -23,9 +23,9 @@ const SettingsAcceptedGift = ({
 
   const lang = useLang();
 
-  const handleOpenTelegramPremiumModal = useLastCallback(() => {
+  const handleOpenTeleBridgePremiumModal = useLastCallback(() => {
     showNotification({
-      message: lang('PrivacySubscribeToTelegramPremium'),
+      message: lang('PrivacySubscribeToTeleBridgePremium'),
       action: {
         action: 'openPremiumModal',
         payload: {},
@@ -37,7 +37,7 @@ const SettingsAcceptedGift = ({
 
   const handleLimitedEditionChange = useLastCallback(() => {
     if (!isCurrentUserPremium) {
-      handleOpenTelegramPremiumModal();
+      handleOpenTeleBridgePremiumModal();
       return;
     }
 
@@ -51,7 +51,7 @@ const SettingsAcceptedGift = ({
 
   const handleUnlimitedEditionChange = useLastCallback(() => {
     if (!isCurrentUserPremium) {
-      handleOpenTelegramPremiumModal();
+      handleOpenTeleBridgePremiumModal();
       return;
     }
     updateGlobalPrivacySettings({
@@ -64,7 +64,7 @@ const SettingsAcceptedGift = ({
 
   const handleUniqueChange = useLastCallback(() => {
     if (!isCurrentUserPremium) {
-      handleOpenTelegramPremiumModal();
+      handleOpenTeleBridgePremiumModal();
       return;
     }
     updateGlobalPrivacySettings({
@@ -77,7 +77,7 @@ const SettingsAcceptedGift = ({
 
   const handlePremiumSubscriptionChange = useLastCallback(() => {
     if (!isCurrentUserPremium) {
-      handleOpenTelegramPremiumModal();
+      handleOpenTeleBridgePremiumModal();
       return;
     }
     updateGlobalPrivacySettings({

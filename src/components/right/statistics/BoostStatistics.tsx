@@ -324,7 +324,7 @@ const BoostStatistics = ({
                         <h3>
                           {isStarsGiveaway
                             ? lang('Giveaway.Stars.Prepaid.Title', prepaidGiveaway.stars)
-                            : lang('BoostingTelegramPremiumCountPlural', prepaidGiveaway.quantity)}
+                            : lang('BoostingTeleBridgePremiumCountPlural', prepaidGiveaway.quantity)}
                         </h3>
                         <p className={styles.month}>
                           {

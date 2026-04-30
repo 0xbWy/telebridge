@@ -96,7 +96,7 @@ export const AiEditorErrorMessage = memo(({
           : lang('AiMessageEditorDailyLimitReached', {
             link: (
               <Link isPrimary onClick={handleOpenPremiumModal}>
-                {lang('TelegramPremium')}
+                {lang('TeleBridgePremium')}
               </Link>
             ),
           }, { withNodes: true })
