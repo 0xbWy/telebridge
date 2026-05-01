@@ -1,6 +1,19 @@
 # TeleBridge
 
-End-to-end encrypted Telegram web client — a fork of [telegram-tt](https://github.com/Ajaxy/telegram-tt) with a custom 4-layer E2E encryption stack, Signal-style group encryption, identity verification, and BIP39 recovery built on top of the Telegram MTProto transport.
+End-to-end encrypted Telegram web client — a fork of [Telegram Web A](https://github.com/Ajaxy/telegram-tt) that adds a custom E2E encryption stack on top of the Telegram MTProto transport. TeleBridge connects to the Telegram API (via gramjs/MTProto) for message transport but adds an independent encryption layer, providing true end-to-end encryption that even Telegram's servers cannot read.
+
+The entire UI has been rebranded from Telegram to TeleBridge.
+
+## Key Features
+
+- **End-to-end encryption** using X3DH key exchange (Ed25519 + X25519)
+- **AES-256-GCM encryption** with HKDF-SHA256 ratcheting for 1:1 chats
+- **Signal-style Sender Keys** for group encryption
+- **Encryption pause/resume toggle** in chat UI — users can temporarily pause E2E encryption per chat
+- **"Login Needed" prompt** when the bridge is locked (keys encrypted at rest)
+- **Key change notifications** and safety number verification — TOFU model with explicit trust confirmation
+- **Argon2id password derivation** with AES-256-GCM encrypted key storage — private keys never touch disk unencrypted
+- **Full rebranding** from Telegram to TeleBridge across the entire UI
 
 ## Setup
 
@@ -15,8 +28,14 @@ End-to-end encrypted Telegram web client — a fork of [telegram-tt](https://git
 cp .env.example .env        # create env file
 # Edit .env — add your TELEGRAM_API_ID and TELEGRAM_API_HASH
 npm install
-npm run build:dev
 npm run dev                  # dev server on http://localhost:1234
+```
+
+### Build & Check
+
+```sh
+npm run build:production     # production build
+npm run check                # typecheck + lint
 ```
 
 ### Environment Variables
@@ -37,7 +56,7 @@ Create a `.env` file in the project root (copy from `.env.example`):
 npm test
 ```
 
-Runs the Jest test suite — **639 unit tests** across **16 test suites**, covering all cryptographic layers, key exchange, group encryption, error handling, security hardening, and edge cases.
+Runs the Jest test suite covering all cryptographic layers, key exchange, group encryption, error handling, security hardening, and edge cases.
 
 ### Test Coverage Summary
 
@@ -48,7 +67,7 @@ Runs the Jest test suite — **639 unit tests** across **16 test suites**, cover
 | crypto-key-derivation                | HKDF-SHA256 consistent derivation paths          |
 | crypto-key-exchange                  | X3DH key exchange, prekey bundles                |
 | crypto-media                         | Media encryption/decryption (all types)          |
-| crypto-password-recovery            | Argon2id hashing, BIP39 mnemonic recovery        |
+| crypto-password-recovery              | Argon2id hashing, BIP39 mnemonic recovery        |
 | crypto-persistence                   | Encrypted key storage & lifecycle                |
 | crypto-protocol                      | Wire format encoding/decoding                    |
 | crypto-symmetric                     | AES-256-GCM encryption, ratcheting, key rotation|
@@ -61,14 +80,16 @@ Runs the Jest test suite — **639 unit tests** across **16 test suites**, cover
 
 ## Architecture
 
-### 4-Layer E2E Encryption Stack
+### 6-Layer E2E Encryption Stack
 
-| Layer | Name            | Description                                                                                   |
-| ----- | --------------- | --------------------------------------------------------------------------------------------- |
-| 1     | Identity        | Ed25519 signing keypair + X25519 derivation for DH. Identity fingerprinting & QR verification. |
-| 2     | Key Exchange    | X3DH (Extended Triple Diffie-Hellman) with signed prekeys & one-time prekeys. Signal-style.   |
-| 3     | Symmetric       | AES-256-GCM with HKDF-SHA256 ratcheting, per-message keys, out-of-order decryption support.  |
-| 4     | Secured         | Per-message X25519 ephemeral keypair for forward secrecy. Encrypt-to-self via separate keys.  |
+| Layer | Name                      | Description                                                                                    |
+| ----- | ------------------------- | ---------------------------------------------------------------------------------------------- |
+| 0     | Telegram Transport        | gramjs/MTProto — provides the underlying message transport to Telegram servers.                |
+| 1     | Identity & Key Management | Ed25519/X25519 keypairs, Argon2id password hashing, AES-256-GCM encrypted key storage.          |
+| 2     | X3DH Key Exchange         | Ephemeral keypairs, prekey bundles, shared secret derivation via Extended Triple DH.           |
+| 3     | Symmetric Encryption      | 1:1 chat AES-256-GCM with HKDF-SHA256 ratcheting, per-message keys (`tb1.s.` protocol).       |
+| 4     | Secured Messages          | Per-message X25519 ephemeral keypair for forward secrecy, encrypt-to-self (`tb1.a.` protocol). |
+| 5     | Group Encryption          | Signal-style Sender Keys, chain key ratcheting, member re-keying (`tb1.g.` protocol).           |
 
 ### Group Encryption
 
@@ -96,7 +117,7 @@ Per-chat encryption status with 5 states:
 - `keyChanged` — Contact's key changed, needs acknowledgment
 - `secured` — Layer 4 ephemeral encryption active
 
-### Wire Format
+## TeleBridge Wire Protocol
 
 All TeleBridge protocol messages use the format:
 
@@ -104,7 +125,21 @@ All TeleBridge protocol messages use the format:
 tb<version>.<mode>.<base64_payload>
 ```
 
-Modes: `s` (symmetric), `a` (asymmetric/secured), `g` (group), `kx` (key exchange), `pk` (prekey)
+| Prefix     | Mode                 | Description                          |
+| ---------- | -------------------- | ------------------------------------ |
+| `tb1.s.`   | Symmetric            | 1:1 chat encrypted messages          |
+| `tb1.kx.`  | Key Exchange         | X3DH prekey bundles & negotiations   |
+| `tb1.a.`   | Asymmetric/Secured   | Ephemeral per-message encryption     |
+| `tb1.g.`   | Group                | Sender Key group encrypted messages  |
+| `tb1.sk.`  | Sender Key           | Group sender key distribution        |
+
+## Security Notes
+
+- **Private keys encrypted at rest** — keys are stored in IndexedDB only as AEAD-encrypted blobs, unlocked via Argon2id-derived password
+- **X3DH key exchange** — provides authenticated key agreement using long-term identity keys and ephemeral keys
+- **Forward secrecy via HKDF ratcheting** — each message uses a unique key derived through HKDF-SHA256 chain ratcheting
+- **AES-256-GCM auth tag verification** — every decryption verifies the GCM authentication tag; tampered or corrupted messages are rejected
+- **Argon2id KDF** — password-based key derivation uses Argon2id (64 MiB memory, 3 iterations, parallelism 1) with PBKDF2-SHA256 fallback
 
 ### Key Recovery & Password
 
