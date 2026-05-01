@@ -60,6 +60,13 @@ export function selectChatEncryptionStatus(
   return state?.status ?? 'notEncrypted';
 }
 
+export function selectIsChatEncryptionPaused(
+  global: { telebridge?: TeleBridgeState },
+  chatId: string,
+): boolean {
+  return selectChatEncryptionState(global, chatId)?.isPaused ?? false;
+}
+
 export function selectIsKeyExchangeInProgress(
   global: { telebridge?: TeleBridgeState },
   chatId: string,

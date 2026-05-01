@@ -110,6 +110,22 @@ export function setChatEncryptionStatus(
   }));
 }
 
+export function setChatEncryptionPaused(
+  global: any,
+  chatId: string,
+  isPaused: boolean,
+): any {
+  return setChatEncryptionState(global, chatId, (chatState) => ({
+    ...chatState,
+    isPaused,
+    status: isPaused
+      ? 'paused' as EncryptionStatus
+      : chatState.keyExchangeState === 'complete'
+        ? 'encrypted' as EncryptionStatus
+        : 'notEncrypted' as EncryptionStatus,
+  }));
+}
+
 export function setChatKeyExchangeState(
   global: any,
   chatId: string,

@@ -38,6 +38,7 @@ import {
   setBridgePasswordSet,
   setBridgeUnlocked,
   setBridgeUnlocking,
+  setChatEncryptionPaused as setChatEncryptionPausedReducer,
   setChatEncryptionState,
   setChatEncryptionStatus as setChatEncryptionStatusReducer,
   setChatKeyExchangeState,
@@ -502,6 +503,13 @@ addActionHandler('telebridgeGeneratePrekeyBundle', (global, actions, payload): A
 addActionHandler('telebridgeSetChatEncryptionStatus', (global, actions, payload): ActionReturnType => {
   const { chatId, status } = payload;
   return setChatEncryptionStatusReducer(global, chatId, status as EncryptionStatus);
+});
+
+// ---------- Encryption Pause/Resume ----------
+
+addActionHandler('telebridgeSetChatEncryptionPaused', (global, actions, payload): ActionReturnType => {
+  const { chatId, isPaused } = payload;
+  return setChatEncryptionPausedReducer(global, chatId, isPaused);
 });
 
 // ---------- Key Change ----------

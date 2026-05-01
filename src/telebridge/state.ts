@@ -7,8 +7,8 @@
 
 // ---------- Encryption State Types ----------
 
-/** Per-chat encryption status (5 states for the indicator emoji). */
-export type EncryptionStatus = 'encrypted' | 'notEncrypted' | 'verified' | 'keyChanged' | 'secured';
+/** Per-chat encryption status (6 states for the indicator emoji). */
+export type EncryptionStatus = 'encrypted' | 'notEncrypted' | 'verified' | 'keyChanged' | 'secured' | 'paused';
 
 /** Group encryption status — reflects the overall state of encryption in a group. */
 export type GroupEncryptionStatus = 'locked' | 'warning' | 'transitional' | 'notEncrypted';
@@ -38,6 +38,8 @@ export interface ChatEncryptionState {
   status: EncryptionStatus;
   /** Key exchange state for this chat. */
   keyExchangeState: KeyExchangeState;
+  /** Whether encryption is paused (outgoing messages sent plaintext). */
+  isPaused?: boolean;
   /** Safety number (grouped numeric fingerprint). */
   safetyNumber?: string;
   /** Whether key change has been acknowledged by user. */
@@ -179,6 +181,13 @@ export function selectChatEncryptionStatus(
 ): EncryptionStatus {
   const state = selectChatEncryptionState(global, chatId);
   return state?.status ?? 'notEncrypted';
+}
+
+export function selectIsChatEncryptionPaused(
+  global: { telebridge: TeleBridgeState },
+  chatId: string,
+): boolean {
+  return selectChatEncryptionState(global, chatId)?.isPaused ?? false;
 }
 
 export function selectIsKeyExchangeInProgress(
@@ -386,6 +395,22 @@ export function setChatEncryptionStatus(
   return setChatEncryptionState(global, chatId, (chatState) => ({
     ...chatState,
     status,
+  }));
+}
+
+export function setChatEncryptionPaused(
+  global: any,
+  chatId: string,
+  isPaused: boolean,
+): any {
+  return setChatEncryptionState(global, chatId, (chatState) => ({
+    ...chatState,
+    isPaused,
+    status: isPaused
+      ? 'paused' as EncryptionStatus
+      : chatState.keyExchangeState === 'complete'
+        ? 'encrypted' as EncryptionStatus
+        : 'notEncrypted' as EncryptionStatus,
   }));
 }
 

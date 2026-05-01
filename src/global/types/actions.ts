@@ -3197,6 +3197,7 @@ export interface ActionPayloads {
   telebridgeSetRecoveryVerified: { verified: boolean };
   telebridgeStartKeyExchange: { chatId: string; recipientPrekeyBundleBase64?: string };
   telebridgeSetChatEncryptionStatus: { chatId: string; status: string };
+  telebridgeSetChatEncryptionPaused: { chatId: string; isPaused: boolean };
   telebridgeAcknowledgeKeyChange: { chatId: string };
   telebridgeDismissBanner: { chatId: string };
   telebridgeSetDefaultEncrypt: { enabled: boolean };
