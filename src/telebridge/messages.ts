@@ -56,7 +56,7 @@ export interface DecryptedMessageResult {
   /** Whether this is a protocol control message (kx/pk) that should be hidden from UI. */
   readonly isProtocolControl: boolean;
   /** Protocol control message type, if applicable. */
-  readonly controlType?: 'kx' | 'pk';
+  readonly controlType?: 'kx' | 'pk' | 'sk';
   /** Protocol payload (for kx/pk messages that need further processing). */
   readonly rawPayload?: Uint8Array;
 }
@@ -294,6 +294,18 @@ function handleNonSymmetricMessage(
     };
   }
 
+  // Sender key distribution messages — processed by the integration layer
+  if (decoded.mode === 'sk') {
+    return {
+      text: '🔑', // Placeholder — not shown to user
+      mode: 'sk',
+      keyId: '',
+      isProtocolControl: true,
+      controlType: 'sk',
+      rawPayload: decoded.payload,
+    };
+  }
+
   // Asymmetric (secured) messages — decrypted separately
   if (decoded.mode === 'a') {
     return {
@@ -458,7 +470,7 @@ export async function decryptProtocolMessage(
 export function shouldHideMessage(text: string): boolean {
   if (!isProtocolMessage(text)) return false;
   const decoded = decodeProtocol(text);
-  return decoded?.mode === 'kx' || decoded?.mode === 'pk';
+  return decoded?.mode === 'kx' || decoded?.mode === 'pk' || decoded?.mode === 'sk';
 }
 
 /**

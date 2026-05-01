@@ -120,3 +120,24 @@ export {
   clearAllGroupKeyChangeData,
   groupKeyChangeStore,
 } from './groupKeyChange';
+
+// Sender key distribution
+export type {
+  DistributionResult,
+  SenderKeyReceiveResult,
+  RekeyResult,
+  NewMemberDistributionResult,
+} from './senderKeyDistribution';
+
+export {
+  distributeSenderKeyToMembers,
+  processIncomingSenderKeyMessage,
+  regenerateAndDistributeSenderKeys,
+  distributeKeysForNewMember,
+  consumePendingSenderKeyMessages,
+  getPendingSenderKeyMessages,
+  clearPendingSenderKeyMessages,
+  lockSenderKeyDistribution,
+  buildPairwiseChatId,
+  hasPairwiseKey,
+} from './senderKeyDistribution';

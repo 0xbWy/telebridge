@@ -24,10 +24,10 @@ export const PROTOCOL_VERSION = 1;
 export const PROTOCOL_PREFIX = 'tb';
 
 /** Valid message modes. */
-export type ProtocolMode = 's' | 'a' | 'g' | 'kx' | 'pk';
+export type ProtocolMode = 's' | 'a' | 'g' | 'sk' | 'kx' | 'pk';
 
 /** Set of valid modes for fast lookup. */
-const VALID_MODES = new Set<string>(['s', 'a', 'g', 'kx', 'pk']);
+const VALID_MODES = new Set<string>(['s', 'a', 'g', 'sk', 'kx', 'pk']);
 
 /**
  * Maximum Telegram message length in characters.
@@ -82,7 +82,7 @@ export function encodeProtocol(
 ): string {
   // Validate mode
   if (!VALID_MODES.has(mode)) {
-    throw new Error(`Invalid protocol mode: "${mode}". Must be one of: s, a, kx, pk`);
+    throw new Error(`Invalid protocol mode: "${mode}". Must be one of: s, a, g, sk, kx, pk`);
   }
 
   // Validate version
@@ -194,7 +194,7 @@ export function decodeProtocol(message: string): ProtocolMessage | undefined {
   let mode: string;
   let payloadBase64: string;
 
-  if (afterVersion.startsWith('kx.') || afterVersion.startsWith('pk.')) {
+  if (afterVersion.startsWith('kx.') || afterVersion.startsWith('pk.') || afterVersion.startsWith('sk.')) {
     // Two-character mode
     mode = afterVersion.slice(0, 2);
     payloadBase64 = afterVersion.slice(3);

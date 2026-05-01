@@ -294,6 +294,20 @@ export function isKeyExchangeMessage(text: string): boolean {
   return decoded?.mode === 'kx';
 }
 
+/**
+ * Check if a message is a sender key distribution (tb1.sk) protocol message.
+ * Used by the message ingestion pipeline to detect sk messages
+ * that need to be dispatched to processIncomingSenderKeyMessage.
+ *
+ * @param text - Raw message text from Telegram
+ * @returns true if the message is a tb1.sk message
+ */
+export function isSenderKeyDistributionMessage(text: string): boolean {
+  if (!isTeleBridgeMessage(text)) return false;
+  const decoded = decodeProtocol(text);
+  return decoded?.mode === 'sk';
+}
+
 // ---------- Incoming Message Decryption ----------
 
 /**
@@ -1058,6 +1072,12 @@ export function lockMessagePipeline(): void {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const groupState = require('./group/groupState') as typeof import('./group/groupState');
   groupState.clearAllGroupEncryption();
+  // Clear sender key distribution state
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const senderKeyDist = require(
+    './group/senderKeyDistribution',
+  ) as typeof import('./group/senderKeyDistribution');
+  senderKeyDist.lockSenderKeyDistribution();
 }
 
 // ---------- Recipient X25519 Public Key Store ----------
@@ -1534,4 +1554,56 @@ export async function processOutgoingGroupMessage(
     console.error('[TeleBridge] Group message encryption failed');
     throw new Error('Group message encryption failed');
   }
+}
+
+// ---------- Incoming Sender Key Distribution ----------
+
+/**
+ * Result of processing an incoming sender key distribution message.
+ */
+export interface SenderKeyDistributionResult {
+  /** Whether the key was successfully processed and stored. */
+  readonly success: boolean;
+  /** Group ID the key belongs to. */
+  readonly groupId: string;
+  /** Member ID of the key owner. */
+  readonly memberId: string;
+  /** Error message if failed. */
+  readonly error?: string;
+}
+
+/**
+ * Process an incoming sender key distribution message (tb1.sk.<base64>).
+ * Called by the message ingestion pipeline when a tb1.sk message is detected.
+ *
+ * This function:
+ * 1. Decodes the tb1.sk protocol message
+ * 2. Deserializes and verifies the distributed sender key
+ * 3. Stores the key for future group message decryption
+ *
+ * VAL-GROUP-002: Received sender keys are stored and available for decryption.
+ *
+ * @param text - The raw message text (tb1.sk.<base64>)
+ * @param groupId - Group chat ID for validation
+ * @returns Distribution result
+ */
+export function processIncomingSenderKeyDistribution(
+  text: string,
+  groupId: string,
+): SenderKeyDistributionResult {
+  if (!isSenderKeyDistributionMessage(text)) {
+    return {
+      success: false,
+      groupId,
+      memberId: '',
+      error: 'Not a sender key distribution message',
+    };
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const senderKeyDist = require(
+    './group/senderKeyDistribution',
+  ) as typeof import('./group/senderKeyDistribution');
+
+  return senderKeyDist.processIncomingSenderKeyMessage(text, groupId);
 }

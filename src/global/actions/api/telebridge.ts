@@ -647,7 +647,12 @@ addActionHandler('telebridgeGenerateGroupSenderKey', (global, actions, payload):
 });
 
 addActionHandler('telebridgeDistributeGroupSenderKey', (global, actions, payload): ActionReturnType => {
-  const { chatId, memberId } = payload;
+  const { chatId, memberId, memberIds, pairwiseChatIds } = payload as {
+    chatId: string;
+    memberId: string;
+    memberIds?: string[];
+    pairwiseChatIds?: Record<string, string>;
+  };
 
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const groupState = require(
@@ -655,27 +660,23 @@ addActionHandler('telebridgeDistributeGroupSenderKey', (global, actions, payload
   ) as typeof import('../../../telebridge/group/groupState');
 
   // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const senderKey = require(
-    '../../../telebridge/group/senderKey',
-  ) as typeof import('../../../telebridge/group/senderKey');
+  const senderKeyDist = require(
+    '../../../telebridge/group/senderKeyDistribution',
+  ) as typeof import('../../../telebridge/group/senderKeyDistribution');
 
-  // Get our own sender key for this group
-  const ownKey = groupState.getOwnGroupSenderKey(chatId, memberId);
-  if (!ownKey) {
-    // No own key — must generate first
-    return global;
-  }
+  // Get all member IDs if not provided
+  const allMemberIds = memberIds ?? Object.keys(groupState.getGroupMemberStates(chatId));
 
-  // Create a distributed version (without signing key) for sharing
-  const distKey = senderKey.createDistributedSenderKey(ownKey);
+  // Build pairwiseChatIds map if provided
+  const chatIdMap = pairwiseChatIds
+    ? new Map(Object.entries(pairwiseChatIds))
+    : undefined;
 
-  // Serialize for transport via 1-on-1 encrypted channel
-  senderKey.serializeSenderKey(distKey);
-
-  // In a real implementation, we would encrypt this with the pairwise chat key
-  // and send it as a tb1.kx.<base64> message to each member.
-  // For now, we just mark the distribution as done in the group state.
-  // TODO: Send serialized.payload to each member via pairwise channel
+  // Distribute our sender key to other group members via pairwise channels
+  // VAL-GROUP-001: Sender keys are encrypted and sent via pairwise channels
+  senderKeyDist.distributeSenderKeyToMembers(
+    chatId, memberId, allMemberIds, chatIdMap,
+  );
 
   // Update status
   const status = groupState.getGroupEncryptionStatus(chatId);
@@ -729,18 +730,34 @@ addActionHandler('telebridgeStoreGroupSenderKey', (global, actions, payload): Ac
 });
 
 addActionHandler('telebridgeGroupMemberJoin', (global, actions, payload): ActionReturnType => {
-  const { chatId, memberId } = payload;
+  const { chatId, memberId, myMemberId, pairwiseChatIds } = payload as {
+    chatId: string;
+    memberId: string;
+    myMemberId?: string;
+    pairwiseChatIds?: Record<string, string>;
+  };
 
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const groupState = require(
     '../../../telebridge/group/groupState',
   ) as typeof import('../../../telebridge/group/groupState');
 
-  // Add the new member to the group state
-  groupState.addGroupMember(chatId, memberId);
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const senderKeyDist = require(
+    '../../../telebridge/group/senderKeyDistribution',
+  ) as typeof import('../../../telebridge/group/senderKeyDistribution');
 
-  // The new member cannot decrypt pre-join messages because they
-  // won't have the old Sender Keys — this is by design (forward secrecy).
+  // VAL-GROUP-005: New member receives all existing members' sender keys on join
+  const existingMembers = Object.keys(groupState.getGroupMemberStates(chatId));
+  senderKeyDist.distributeKeysForNewMember(chatId, memberId, existingMembers);
+
+  // If we have our own member ID, distribute our key to the new member
+  if (myMemberId) {
+    const chatIdMap = pairwiseChatIds
+      ? new Map(Object.entries(pairwiseChatIds))
+      : undefined;
+    senderKeyDist.distributeSenderKeyToMembers(chatId, myMemberId, [...existingMembers, memberId], chatIdMap);
+  }
 
   // Update encryption status
   const status = groupState.getGroupEncryptionStatus(chatId);
@@ -753,32 +770,50 @@ addActionHandler('telebridgeGroupMemberJoin', (global, actions, payload): Action
 });
 
 addActionHandler('telebridgeGroupMemberLeave', (global, actions, payload): ActionReturnType => {
-  const { chatId, memberId } = payload;
+  const { chatId, memberId, myMemberId, pairwiseChatIds } = payload as {
+    chatId: string;
+    memberId: string;
+    myMemberId?: string;
+    pairwiseChatIds?: Record<string, string>;
+  };
 
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const groupState = require(
     '../../../telebridge/group/groupState',
   ) as typeof import('../../../telebridge/group/groupState');
 
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const senderKeyDist = require(
+    '../../../telebridge/group/senderKeyDistribution',
+  ) as typeof import('../../../telebridge/group/senderKeyDistribution');
+
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const persistence = require(
+    '../../../telebridge/crypto/persistence',
+  ) as typeof import('../../../telebridge/crypto/persistence');
+
+  // VAL-GROUP-006: Member leave triggers re-key: old keys zeroed, new keys generated
   // Start re-keying — all remaining members must regenerate Sender Keys
   groupState.startGroupRekeying(chatId);
 
-  // Remove the departed member from the group state
-  groupState.removeGroupMember(chatId, memberId);
+  // Regenerate our own Sender Key and distribute to remaining members
+  // Old keys are zeroed for forward secrecy
+  const identity = persistence.getUnlockedIdentity();
+  const identitySigningKey = identity?.ed25519.signingBytes;
+  const chatIdMap = pairwiseChatIds
+    ? new Map(Object.entries(pairwiseChatIds))
+    : undefined;
 
-  // Update encryption status to transitional
-  global = getGlobal();
-  global = setGroupEncryptionStatusReducer(
-    global, chatId, 'transitional' as GroupEncryptionStatus,
+  senderKeyDist.regenerateAndDistributeSenderKeys(
+    chatId, myMemberId ?? '', [memberId], identitySigningKey, chatIdMap,
   );
 
-  // In a real implementation, we would:
-  // 1. Regenerate our own Sender Key for this group
-  // 2. Distribute the new key to remaining members via pairwise channels
-  // 3. Old Sender Keys are deleted — departed member cannot decrypt new messages
+  // After re-keying, complete the transition
+  groupState.completeGroupRekeying(chatId);
 
-  // For now, update status to reflect the re-keying
+  // Update status to reflect the new state
   const status = groupState.getGroupEncryptionStatus(chatId);
+  global = getGlobal();
   global = setGroupEncryptionStatusReducer(
     global, chatId, status as GroupEncryptionStatus,
   );

@@ -146,6 +146,22 @@ addActionHandler('apiUpdate', (global, actions, update): ActionReturnType => {
             actions.telebridgeCompleteKeyExchange({ chatId, kxMessage: messageText });
           }
         }
+        // VAL-GROUP-002: Incoming sender key distribution messages routed to store handler
+        if (typeof messageText === 'string' && messageText.startsWith('tb1.sk.')) {
+          // eslint-disable-next-line @typescript-eslint/no-require-imports
+          const integ = require('../../../telebridge/integration') as typeof import('../../../telebridge/integration');
+          if (integ.isSenderKeyDistributionMessage(messageText)) {
+            const result = integ.processIncomingSenderKeyDistribution(messageText, chatId);
+            if (result.success) {
+              // The key was stored in processIncomingSenderKeyDistribution
+              // via storeDistributedSenderKey. Update global state.
+              actions.telebridgeSetGroupEncryptionStatus({
+                chatId,
+                status: 'locked',
+              });
+            }
+          }
+        }
       }
 
       Object.values(global.byTabId).forEach(({ id: tabId }) => {
