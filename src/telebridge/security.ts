@@ -281,31 +281,64 @@ export function validateKeyExchangeMessage(
     };
   }
 
-  // Step 4: Check payload minimum size
-  const MIN_KX_PAYLOAD = 32; // At minimum, X25519 public key
-  if (decoded.payload.length < MIN_KX_PAYLOAD) {
-    return {
-      isValid: false,
-      isForged: true,
-      reason: `kx payload too small: ${decoded.payload.length} bytes (minimum: ${MIN_KX_PAYLOAD})`,
-    };
-  }
+  // Step 4: Check payload minimum size and type
+  // Rotation kx messages start with 0x02 marker byte
+  const isRotationKx = decoded.payload.length > 0 && decoded.payload[0] === 0x02;
 
-  // Step 5: Check for all-zero public key (low-order point attack)
-  const publicKey = decoded.payload.slice(0, 32);
-  let isAllZeros = true;
-  for (let i = 0; i < 32; i++) {
-    if (publicKey[i] !== 0) {
-      isAllZeros = false;
-      break;
+  if (isRotationKx) {
+    // Rotation kx payload minimum: [0x02][keyId(4)][ephPub(32)][nonce(12)][ciphertext(32)][authTag(16)] = 97 bytes
+    const MIN_ROTATION_KX_PAYLOAD = 97;
+    if (decoded.payload.length < MIN_ROTATION_KX_PAYLOAD) {
+      return {
+        isValid: false,
+        isForged: true,
+        reason: `Rotation kx payload too small: ${decoded.payload.length} bytes (minimum: ${MIN_ROTATION_KX_PAYLOAD})`,
+      };
     }
-  }
-  if (isAllZeros) {
-    return {
-      isValid: false,
-      isForged: true,
-      reason: 'All-zero public key detected (possible low-order point attack)',
-    };
+
+    // Check the ephemeral public key at offset 5 for all-zeros
+    const ephPub = decoded.payload.slice(5, 37);
+    let ephIsAllZeros = true;
+    for (let i = 0; i < 32; i++) {
+      if (ephPub[i] !== 0) {
+        ephIsAllZeros = false;
+        break;
+      }
+    }
+    if (ephIsAllZeros) {
+      return {
+        isValid: false,
+        isForged: true,
+        reason: 'All-zero ephemeral public key detected in rotation kx (possible low-order point attack)',
+      };
+    }
+  } else {
+    // Initial kx payload: ephemeralPub(32) + x25519IdentityPub(32) = 64 bytes minimum
+    const MIN_INITIAL_KX_PAYLOAD = 64;
+    if (decoded.payload.length < MIN_INITIAL_KX_PAYLOAD) {
+      return {
+        isValid: false,
+        isForged: true,
+        reason: `kx payload too small: ${decoded.payload.length} bytes (minimum: ${MIN_INITIAL_KX_PAYLOAD})`,
+      };
+    }
+
+    // Step 5: Check for all-zero public key (low-order point attack)
+    const publicKey = decoded.payload.slice(0, 32);
+    let isAllZeros = true;
+    for (let i = 0; i < 32; i++) {
+      if (publicKey[i] !== 0) {
+        isAllZeros = false;
+        break;
+      }
+    }
+    if (isAllZeros) {
+      return {
+        isValid: false,
+        isForged: true,
+        reason: 'All-zero public key detected (possible low-order point attack)',
+      };
+    }
   }
 
   // Step 6: Check against known fingerprints (optional)

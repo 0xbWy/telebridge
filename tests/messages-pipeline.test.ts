@@ -19,43 +19,35 @@
  */
 
 import {
-  encryptMessage,
-  decryptMessage,
-  decryptProtocolMessage,
-  setChatKey,
-  hasChatKey,
-  getChatKeyEntry,
-  shouldRotateChatKey,
-  rotateChatKey,
-  isTeleBridgeMessage,
-  shouldHideMessage,
-  getMessageCounter,
-  clearAllChatKeys,
-} from '../src/telebridge/messages';
-
-import {
-  processOutgoingMessage,
-  processIncomingMessage,
-  processEditedMessage,
-  processForwardedMessage,
-  processReplyMessage,
-  checkKeyRotation,
-  lockMessagePipeline,
-} from '../src/telebridge/integration';
-
-import {
   decodeProtocol,
   encodeProtocol,
-  isProtocolMessage,
-  PROTOCOL_PREFIX,
-  PROTOCOL_VERSION,
 } from '../src/telebridge/crypto/protocol';
-
 import {
   generateChatKey,
-  RatchetState,
-  DEFAULT_ROTATE_AFTER_MESSAGES,
 } from '../src/telebridge/crypto/symmetric';
+import {
+  checkKeyRotation,
+  lockMessagePipeline,
+  processEditedMessage,
+  processForwardedMessage,
+  processIncomingMessage,
+  processOutgoingMessage,
+  processReplyMessage,
+} from '../src/telebridge/integration';
+import {
+  clearAllChatKeys,
+  decryptMessage,
+  decryptProtocolMessage,
+  encryptMessage,
+  getChatKeyEntry,
+  getMessageCounter,
+  hasChatKey,
+  isTeleBridgeMessage,
+  rotateChatKey,
+  setChatKey,
+  shouldHideMessage,
+  shouldRotateChatKey,
+} from '../src/telebridge/messages';
 
 // ---------- Test Utilities ----------
 
@@ -483,7 +475,7 @@ describe('VAL-CROSS-009: Key rotation preserves seamless encryption', () => {
 
   test('messages across rotation boundary decrypt correctly', async () => {
     const chatId = 'test-chat-rotation';
-    const entry = setupChatKey(chatId);
+    setupChatKey(chatId);
 
     // Send a message before rotation
     const msg1 = await encryptMessage('Before rotation', chatId);
@@ -493,7 +485,7 @@ describe('VAL-CROSS-009: Key rotation preserves seamless encryption', () => {
     expect(chatKeyEntry).toBeDefined();
 
     // Rotate the key
-    const { oldKeyId, newKeyId, newKey } = rotateChatKey(chatId);
+    const { oldKeyId, newKeyId } = rotateChatKey(chatId);
     expect(newKeyId).not.toBe(oldKeyId);
 
     // Send a message after rotation
@@ -623,11 +615,11 @@ describe('Incoming message processing', () => {
 describe('Key rotation check', () => {
   afterEach(cleanup);
 
-  test('checkKeyRotation returns undefined when rotation not needed', () => {
+  test('checkKeyRotation returns undefined when rotation not needed', async () => {
     const chatId = 'test-rotation-not-needed';
     setupChatKey(chatId);
 
-    const result = checkKeyRotation(chatId);
+    const result = await checkKeyRotation(chatId);
     expect(result).toBeUndefined();
   });
 

@@ -27,58 +27,49 @@
  */
 
 import {
-  createDecryptionError,
-  classifyDecryptionError,
-  handleEncryptionFailure,
-  isEncryptionFailure,
-  Argon2idMemoryError,
-  isArgon2idMemoryError,
-  withArgon2idMemoryHandling,
-  createKeyExchangeTracker,
-  classifyIndexedDBError,
-  withIndexedDBFallback,
-  InMemoryKeyStore,
-} from '../src/telebridge/errorHandling';
-
-import {
-  ReplayDetector,
-  replayDetector,
-  validateProtocolVersion,
-  validateProtocolMessage,
-  validateKeyExchangeMessage,
-  validatePrekeyMessage,
-  verifyForwardSecrecy,
-  SUPPORTED_PROTOCOL_VERSIONS,
-} from '../src/telebridge/security';
-
-import {
-  normalizeMessageText,
-  verifyRoundTrip,
-  EDGE_CASE_MESSAGES,
-  validateMessageInputSize,
-  resolveConcurrentKeyExchange,
-  validateBurstMessages,
-  detectPartialKeyGeneration,
-  getAccountNamespacedKey,
-  getAccountStoreName,
-} from '../src/telebridge/edgeCases';
-
-import {
   encodeProtocol,
-  decodeProtocol,
-  PROTOCOL_VERSION,
 } from '../src/telebridge/crypto/protocol';
-
-import {
-  encryptMessage,
-  decryptMessage,
-  setChatKey,
-  clearAllChatKeys,
-} from '../src/telebridge/messages';
-
 import {
   generateChatKey,
 } from '../src/telebridge/crypto/symmetric';
+import {
+  detectPartialKeyGeneration,
+  EDGE_CASE_MESSAGES,
+  getAccountNamespacedKey,
+  getAccountStoreName,
+  normalizeMessageText,
+  resolveConcurrentKeyExchange,
+  validateBurstMessages,
+  validateMessageInputSize,
+  verifyRoundTrip,
+} from '../src/telebridge/edgeCases';
+import {
+  Argon2idMemoryError,
+  classifyDecryptionError,
+  classifyIndexedDBError,
+  createDecryptionError,
+  createKeyExchangeTracker,
+  handleEncryptionFailure,
+  InMemoryKeyStore,
+  isArgon2idMemoryError,
+  isEncryptionFailure,
+  withArgon2idMemoryHandling,
+  withIndexedDBFallback,
+} from '../src/telebridge/errorHandling';
+import {
+  clearAllChatKeys,
+  decryptMessage,
+  encryptMessage,
+  setChatKey,
+} from '../src/telebridge/messages';
+import {
+  ReplayDetector,
+  validateKeyExchangeMessage,
+  validatePrekeyMessage,
+  validateProtocolMessage,
+  validateProtocolVersion,
+  verifyForwardSecrecy,
+} from '../src/telebridge/security';
 
 // ============================================================
 // VAL-ERR-001: Decryption failure shows user-facing error
@@ -451,9 +442,12 @@ describe('VAL-SEC-002: Protocol version downgrade rejection', () => {
 
 describe('VAL-SEC-003: Forged key exchange rejection', () => {
   test('valid kx message passes validation', () => {
-    // Create a valid kx message with 32+ byte payload
-    const payload = new Uint8Array(32);
+    // Create a valid kx message with 64+ byte payload (initial kx format:
+    // ephemeralPub (32 bytes) + x25519IdentityPub (32 bytes))
+    const payload = new Uint8Array(64);
     crypto.getRandomValues(payload);
+    // Ensure first byte of payload is not the rotation marker (0x02)
+    payload[0] = 0x01;
     const kxMessage = encodeProtocol('kx', payload);
     const result = validateKeyExchangeMessage(kxMessage);
     expect(result.isValid).toBe(true);
@@ -461,7 +455,8 @@ describe('VAL-SEC-003: Forged key exchange rejection', () => {
   });
 
   test('kx message with all-zero public key is rejected (low-order point)', () => {
-    const zeroPayload = new Uint8Array(32); // All zeros
+    // Initial kx format: ephemeralPub (32 bytes) + x25519IdentityPub (32 bytes)
+    const zeroPayload = new Uint8Array(64); // All zeros
     const kxMessage = encodeProtocol('kx', zeroPayload);
     const result = validateKeyExchangeMessage(kxMessage);
     expect(result.isValid).toBe(false);
@@ -538,12 +533,12 @@ describe('VAL-EDGE-001: Empty and whitespace message encryption', () => {
   });
 
   const whitespaceMessages = [
-    '',           // Empty string
-    ' ',          // Single space
-    '  ',         // Multiple spaces
-    '\t',         // Tab
-    '\n',         // Newline
-    '  \t\n  ',   // Mixed whitespace
+    '', // Empty string
+    ' ', // Single space
+    '  ', // Multiple spaces
+    '\t', // Tab
+    '\n', // Newline
+    '  \t\n  ', // Mixed whitespace
   ];
 
   for (const msg of whitespaceMessages) {
