@@ -57,6 +57,7 @@ import {
   shouldRotateChatKey,
 } from './messages';
 import {
+  ReplayDetector,
   replayDetector,
   validateKeyExchangeMessage,
   validateProtocolVersion,
@@ -391,10 +392,24 @@ export async function processIncomingMessage(
     }
 
     // VAL-SEC-001: Replay detection for symmetric messages
+    // Uses unique messageId built from keyId + counter + nonce to prevent
+    // all messages under the same chat key from being flagged as replays.
     if (result.mode === 's' && result.keyId) {
-      // Extract counter from the binary payload for replay detection
-      // The counter is embedded in the protocol message
-      const messageId = result.keyId;
+      // Build unique messageId from keyId, counter, and nonce
+      // This ensures each distinct encrypted message has a unique ID
+      let messageId: string;
+      if (decoded?.mode === 's' && decoded.payload.length >= 20) {
+        // Extract counter (bytes 4-8) and nonce (bytes 8-20) from payload
+        // Payload format: [keyId (4B)][counter (4B)][nonce (12B)][ciphertext][authTag (16B)]
+        const counter = (decoded.payload[4] << 24) | (decoded.payload[5] << 16)
+          | (decoded.payload[6] << 8) | decoded.payload[7];
+        const nonce = decoded.payload.slice(8, 20);
+        messageId = ReplayDetector.createMessageId(result.keyId, counter, nonce);
+      } else {
+        // Fallback: use only keyId (less precise but still provides basic protection)
+        messageId = result.keyId;
+      }
+
       if (replayDetector.isReplay(chatId, messageId)) {
         // Replayed message — return error indicator instead of plaintext
         return {

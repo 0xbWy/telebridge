@@ -368,12 +368,13 @@ describe('VAL-E2E-010: Key Change Detection', () => {
     global = setContactFingerprint(global, 'user-123', 'fingerprint-A');
     const entry1 = global.telebridge.contactVerificationStates['user-123'];
     expect(entry1?.currentFingerprint).toBe('fingerprint-A');
+    expect(entry1?.keyChangeCount).toBe(0); // Initial count is 0
 
     // Change fingerprint → should increment keyChangeCount
     global = setContactFingerprint(global, 'user-123', 'fingerprint-B');
     const entry2 = global.telebridge.contactVerificationStates['user-123'];
     expect(entry2?.currentFingerprint).toBe('fingerprint-B');
-    expect(entry2?.keyChangeCount).toBeGreaterThanOrEqual(0);
+    expect(entry2?.keyChangeCount).toBe(1); // Must be exactly 1 after one change
   });
 
   test('keyExchangeState transitions properly: idle → inProgress → complete', () => {

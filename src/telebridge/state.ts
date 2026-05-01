@@ -534,8 +534,14 @@ export function setContactFingerprint(
   const existing = selectTeleBridgeState({ telebridge: global.telebridge ?? INITIAL_TELEBRIDGE_STATE })
     .contactVerificationStates[userId];
 
+  // If the existing entry has a different fingerprint, increment keyChangeCount
+  const isKeyChange = existing?.currentFingerprint && existing.currentFingerprint !== fingerprint;
+  const newKeyChangeCount = isKeyChange
+    ? (existing?.keyChangeCount ?? 0) + 1
+    : (existing?.keyChangeCount ?? 0);
+
   const entry: ContactVerificationEntry = existing
-    ? { ...existing, currentFingerprint: fingerprint }
+    ? { ...existing, currentFingerprint: fingerprint, keyChangeCount: newKeyChangeCount }
     : {
       userId,
       verificationStatus: 'unknown' as ContactVerificationStatus,
