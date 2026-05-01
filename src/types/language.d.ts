@@ -2322,6 +2322,8 @@ export interface LangPair {
   'TeleBridgeResumeEncryptionDescription': undefined;
   'TeleBridgeEncryptionPaused': undefined;
   'TeleBridgeEncryptionPausedTooltip': undefined;
+  'TeleBridgeEncryptionPausedSendMessage': undefined;
+  'TeleBridgeSendSecuredPaused': undefined;
   'TeleBridgeLoginNeeded': undefined;
   'TeleBridgeLoginNeededDescription': undefined;
   'TeleBridgeLoginNeededUnlock': undefined;

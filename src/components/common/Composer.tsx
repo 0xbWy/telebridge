@@ -109,6 +109,7 @@ import { selectCurrentLimit } from '../../global/selectors/limits';
 import { selectSharedSettings } from '../../global/selectors/sharedState';
 import {
   selectChatEncryptionStatus,
+  selectIsChatEncryptionPaused,
   selectIsKeyExchangeInProgress,
 } from '../../global/selectors/telebridge';
 import {
@@ -330,6 +331,7 @@ type StateProps = {
   shouldOpenMessageMediaEditor?: TabState['shouldOpenMessageMediaEditor'];
   isKeyExchangeInProgress?: boolean;
   chatEncryptionStatus?: string;
+  isPaused?: boolean;
 };
 
 enum MainButtonState {
@@ -460,6 +462,7 @@ const Composer = ({
   shouldOpenMessageMediaEditor,
   isKeyExchangeInProgress,
   chatEncryptionStatus,
+  isPaused,
   onDropHide,
   onFocus,
   onBlur,
@@ -1319,11 +1322,12 @@ const Composer = ({
         if (areEffectsSupported) saveEffectInDraft({ chatId, threadId, effectId: undefined });
 
         // Prepare text for sending — may encrypt with TeleBridge if chat key exists
+        // When encryption is paused (isPaused), skip encryption and send plaintext
         let finalText = text;
         try {
           // eslint-disable-next-line @typescript-eslint/no-require-imports
           const integ = require('../../telebridge/integration') as typeof import('../../telebridge/integration');
-          if (integ.hasChatKey(chatId)) {
+          if (integ.hasChatKey(chatId) && !isPaused) {
             const result = await integ.processOutgoingMessage(text, chatId);
             if (result.wasEncrypted) {
               finalText = result.text;
@@ -2083,6 +2087,15 @@ const Composer = ({
   });
 
   const handleSendSecured = useLastCallback(async () => {
+    // When encryption is paused, secured send is also skipped
+    if (isPaused) {
+      showNotification({
+        localId: 'telebridgeSendSecuredPaused',
+        message: lang('TeleBridgeSendSecuredPaused'),
+      });
+      return;
+    }
+
     // Check if key exchange is in progress or no encryption key is established
     if (isKeyExchangeInProgress) {
       showNotification({
@@ -2996,6 +3009,7 @@ export default memo(withGlobal<OwnProps>(
       replyToMessage,
       isKeyExchangeInProgress: isUserId(chatId) ? selectIsKeyExchangeInProgress(global, chatId) : undefined,
       chatEncryptionStatus: isUserId(chatId) ? selectChatEncryptionStatus(global, chatId) : undefined,
+      isPaused: selectIsChatEncryptionPaused(global, chatId),
     };
   },
 )(Composer));

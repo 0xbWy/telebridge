@@ -3100,6 +3100,8 @@
 "TeleBridgeResumeEncryptionDescription" = "Resume sending encrypted messages in this chat.";
 "TeleBridgeEncryptionPaused" = "Encryption Paused";
 "TeleBridgeEncryptionPausedTooltip" = "Encryption is paused. Messages are sent unencrypted.";
+"TeleBridgeEncryptionPausedSendMessage" = "Encryption is paused. Message sent as plaintext.";
+"TeleBridgeSendSecuredPaused" = "Cannot send secured message while encryption is paused. Resume encryption first.";
 "TeleBridgeLoginNeeded" = "Login Needed";
 "TeleBridgeLoginNeededDescription" = "Log in to TeleBridge to manage encryption settings.";
 "TeleBridgeLoginNeededUnlock" = "Unlock TeleBridge to manage encryption.";
