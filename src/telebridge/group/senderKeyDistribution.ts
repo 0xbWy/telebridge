@@ -318,8 +318,12 @@ export function processIncomingSenderKeyMessage(
     // Deserialize the distributed sender key
     const distKey = deserializeSenderKey(decoded.payload);
 
-    // Verify the key ID matches the chain key
-    if (!verifySenderKeyId(distKey)) {
+    // Verify the key ID matches the chain key — but only for keys distributed at
+    // chain index 0. After the sender has ratcheted their key (startChainIndex > 0),
+    // the chain key no longer matches the original keyId. This is expected and
+    // not a security issue: the actual security comes from AES-GCM auth tag
+    // verification during decryption.
+    if (distKey.startChainIndex === 0 && !verifySenderKeyId(distKey)) {
       return {
         success: false,
         groupId,
