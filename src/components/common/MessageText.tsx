@@ -5,10 +5,15 @@ import {
 import type { ApiFormattedText, ApiMessage, ApiStory } from '../../api/types';
 import type { ObserveFn } from '../../hooks/useIntersectionObserver';
 import type { ThreadId } from '../../types';
+import type { RegularLangKey } from '../../types/language';
 import { ApiMessageEntityTypes } from '../../api/types';
 
 import { extractMessageText, stripCustomEmoji } from '../../global/helpers';
 import trimText from '../../util/trimText';
+import {
+  shouldHideTeleBridgeMessage,
+  useTelebridgeDecryption,
+} from '../../telebridge/hooks';
 import { insertTextEntity, renderTextWithEntities } from './helpers/renderTextWithEntities';
 
 import useLang from '../../hooks/useLang';
@@ -41,6 +46,12 @@ interface OwnProps {
   maxTimestamp?: number;
   shouldAnimateTyping?: boolean;
   canAnimateTextStreaming?: boolean;
+  /** Chat ID for TeleBridge decryption key lookup */
+  chatId?: string;
+  /** Sender ID for TeleBridge encrypt-to-self duplicate filtering */
+  senderId?: string;
+  /** Our user ID for TeleBridge encrypt-to-self duplicate filtering */
+  ourUserId?: string;
 }
 
 const MIN_CUSTOM_EMOJIS_FOR_SHARED_CANVAS = 3;
@@ -68,6 +79,9 @@ function MessageText({
   threadId,
   shouldAnimateTyping,
   canAnimateTextStreaming,
+  chatId,
+  senderId,
+  ourUserId,
 }: OwnProps) {
   const sharedCanvasRef = useRef<HTMLCanvasElement>();
   const sharedCanvasHqRef = useRef<HTMLCanvasElement>();
@@ -78,7 +92,55 @@ function MessageText({
 
   const formattedText = forcedText || extractMessageText(messageOrStory, inChatList);
   const adaptedFormattedText = isForAnimation && formattedText ? stripCustomEmoji(formattedText) : formattedText;
-  const { text, entities } = adaptedFormattedText || {};
+  const { text: rawText, entities: rawEntities } = adaptedFormattedText || {};
+
+  // TeleBridge: Decrypt encrypted messages inline
+  const telebridgeChatId = chatId ?? ('chatId' in messageOrStory ? messageOrStory.chatId : undefined);
+
+  // Synchronous check: protocol messages (kx, pk, sk) should be hidden from chat UI
+  const isProtocolHidden = rawText ? shouldHideTeleBridgeMessage(rawText) : false;
+
+  const {
+    decryptedText: telebridgeDecryptedText,
+    isSecured: telebridgeIsSecured,
+    decryptionErrorKey: telebridgeErrorKey,
+  } = useTelebridgeDecryption(
+    rawText,
+    telebridgeChatId ?? '',
+    senderId,
+    ourUserId,
+  );
+
+  // Determine display text and entities based on TeleBridge decryption result
+  // When we decrypt successfully, original entities are invalid (they applied to encrypted text)
+  let displayText = rawText;
+  let displayEntities = rawEntities;
+
+  if (rawText) {
+    if (telebridgeDecryptedText !== undefined) {
+      // Successfully decrypted — use plaintext, original entities are no longer valid
+      displayText = telebridgeDecryptedText;
+      displayEntities = undefined;
+    } else if (telebridgeErrorKey) {
+      // Decryption failed — show localized error message, no entities
+      // telebridgeErrorKey is a LangPair key but typed as string; cast is safe
+      displayText = lang(telebridgeErrorKey as RegularLangKey);
+      displayEntities = undefined;
+    } else if (rawText.startsWith('tb1.') && telebridgeChatId) {
+      // Encrypted message still decrypting or no key available — show placeholder
+      displayText = lang('TeleBridgeEncryptedMessage');
+      displayEntities = undefined;
+    }
+  }
+
+  // Per-message encryption indicator:
+  // 🔐 for secured (Layer 4), 🔒 for symmetric (Layer 3), nothing for plaintext
+  const telebridgeMode = telebridgeDecryptedText !== undefined
+    ? (telebridgeIsSecured ? 'secured' : 'symmetric')
+    : 'none';
+
+  const text = displayText;
+  const entities = displayEntities;
 
   const entitiesWithFocusedQuote = useMemo(() => {
     if (!text || !focusedQuote) return entities;
@@ -139,6 +201,12 @@ function MessageText({
     });
   });
 
+  // TeleBridge: protocol messages (kx/pk/sk) render as zero-height hidden elements
+  // IMPORTANT: This return must come AFTER all hooks to avoid React rules-of-hooks violations
+  if (isProtocolHidden) {
+    return <div className="telebridge-protocol-hidden" />;
+  }
+
   if (!text && !canBeEmpty) {
     return <span className="content-unsupported">{lang('MessageUnsupported')}</span>;
   }
@@ -148,8 +216,18 @@ function MessageText({
     entities: entitiesWithFocusedQuote,
   };
 
+  // Render encryption indicator prefix for decrypted messages
+  const encryptionIndicator = telebridgeMode === 'secured'
+    ? '\u{1F510} ' // 🔐 secured
+    : telebridgeMode === 'symmetric'
+      ? '\u{1F512} ' // 🔒 symmetric
+      : ''; // plaintext — no indicator
+
   return (
     <>
+      {encryptionIndicator && (
+        <span className="telebridge-encryption-indicator">{encryptionIndicator}</span>
+      )}
       {[
         withSharedCanvas && <canvas key="shared-canvas" ref={sharedCanvasRef} className="shared-canvas" />,
         withSharedCanvas && <canvas key="shared-canvas-hq" ref={sharedCanvasHqRef} className="shared-canvas" />,

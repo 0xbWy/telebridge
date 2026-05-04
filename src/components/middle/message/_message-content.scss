@@ -55,6 +55,19 @@
     }
   }
 
+  .telebridge-protocol-hidden {
+    pointer-events: none;
+    overflow: hidden;
+    height: 0;
+    visibility: hidden;
+  }
+
+  .telebridge-encryption-indicator {
+    margin-right: 0.15em;
+    font-size: 0.85em;
+    vertical-align: baseline;
+  }
+
   .text-content,
   .transcription {
     position: relative;

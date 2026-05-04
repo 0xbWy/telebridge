@@ -32,6 +32,19 @@
   align-items: flex-end;
   margin-bottom: 0.375rem;
 
+  // TeleBridge: protocol messages (kx/pk/sk) are hidden from chat UI
+  &.telebridge-protocol-message {
+    pointer-events: none;
+
+    overflow: hidden;
+
+    height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+
+    visibility: hidden;
+  }
+
   .theme-dark & {
     --color-reaction: rgb(255, 255, 255, 0.1);
     --hover-color-reaction: rgb(255, 255, 255, 0.2);

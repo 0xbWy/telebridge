@@ -137,6 +137,7 @@ import { parseTranslationCacheKey } from '../../../util/keys/translationKey';
 import { getServerTime } from '../../../util/serverTime';
 import stopEvent from '../../../util/stopEvent';
 import { isElementInViewport } from '../../../util/visibility/isElementInViewport';
+import { shouldHideTeleBridgeMessage } from '../../../telebridge/hooks';
 import { calculateDimensionsForMessageMedia, getStickerDimensions, REM } from '../../common/helpers/mediaDimensions';
 import renderText from '../../common/helpers/renderText';
 import { getCustomEmojiSize } from '../composer/helpers/customEmoji';
@@ -340,6 +341,7 @@ type StateProps = {
   isReplyMediaNsfw?: boolean;
   summary?: TextSummary;
   canSendStickers?: boolean;
+  ourUserId?: string;
 };
 
 type MetaPosition =
@@ -470,6 +472,7 @@ const Message = ({
   webPage,
   summary,
   canSendStickers,
+  ourUserId,
   observeIntersectionForBottom,
   observeIntersectionForLoading,
   observeIntersectionForPlaying,
@@ -771,6 +774,12 @@ const Message = ({
   const hasTextContent = textMessage && hasMessageText(textMessage);
   const hasText = hasTextContent || hasFactCheck;
 
+  // TeleBridge: Check if this is a protocol control message (kx/pk/sk) that should be hidden
+  const messageTextPlain = textMessage && getMessageContent(textMessage).text?.text;
+  const isTeleBridgeProtocolMessage = messageTextPlain
+    ? shouldHideTeleBridgeMessage(messageTextPlain)
+    : false;
+
   const containerClassName = buildClassName(
     'Message message-list-item',
     isFirstInGroup && 'first-in-group',
@@ -799,6 +808,7 @@ const Message = ({
     isSwiped && 'is-swiped',
     isJustAdded && 'is-just-added',
     (hasActiveReactions || shouldPlayEffect) && 'has-active-effect',
+    isTeleBridgeProtocolMessage && 'telebridge-protocol-message',
     isStoryMention && 'is-story-mention',
   );
 
@@ -1104,6 +1114,9 @@ const Message = ({
         threadId={threadId}
         shouldAnimateTyping={isTypingDraft}
         canAnimateTextStreaming={canAnimateTextStreaming}
+        chatId={chatId}
+        senderId={message.senderId}
+        ourUserId={ourUserId}
       />
     );
   }
@@ -2301,6 +2314,7 @@ export default memo(withGlobal<OwnProps>(
       webPage,
       summary,
       canSendStickers: allowedAttachmentOptions.canSendStickers,
+      ourUserId: global.currentUserId,
     };
   },
 )(Message));
