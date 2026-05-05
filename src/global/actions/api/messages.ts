@@ -28,6 +28,7 @@ import { MAIN_THREAD_ID, MESSAGE_DELETED } from '../../../api/types';
 import { LoadMoreDirection } from '../../../types';
 
 import {
+  DEBUG,
   GIF_MIME_TYPE,
   MAX_MEDIA_FILES_FOR_ALBUM,
   MESSAGE_ID_REQUIRED_ERROR,
@@ -714,8 +715,10 @@ addActionHandler('editMessage', (global, actions, payload): ActionReturnType => 
       }
     } catch (encError) {
       // V1 Bug #2 guard: If encryption fails, do NOT send plaintext edit
-      // eslint-disable-next-line no-console
-      console.error('[TeleBridge] Edit encryption failed, aborting edit:', encError);
+      if (DEBUG) {
+        // eslint-disable-next-line no-console
+        console.error('[TeleBridge] Edit encryption failed, aborting edit:', encError);
+      }
       getActions().showNotification({
         localId: 'telebridgeEditEncryptFailed',
         message: 'TeleBridgeEncryptFailed',
@@ -1755,7 +1758,8 @@ async function executeForwardMessages(global: GlobalState, sendParams: SendMessa
   }
 
   for (const message of serviceMessages) {
-    let { text, entities } = message.content.text || {};
+    let { text } = message.content.text || {};
+    const { entities } = message.content.text || {};
     const { sticker } = message.content;
 
     // TeleBridge: Re-encrypt forwarded message text for encrypted destination
@@ -2854,7 +2858,8 @@ async function forwardMessagesToChat({
   }
 
   for (const message of serviceMessages) {
-    let { text, entities } = message.content.text || {};
+    let { text } = message.content.text || {};
+    const { entities } = message.content.text || {};
     const { sticker } = message.content;
 
     // TeleBridge: Re-encrypt forwarded message text for encrypted destination

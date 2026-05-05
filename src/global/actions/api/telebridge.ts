@@ -12,6 +12,7 @@ import type {
 } from '../../../telebridge/state';
 import type { ActionReturnType } from '../../types';
 
+import { DEBUG } from '../../../config';
 import {
   deriveX25519FromEd25519,
   generateIdentityKeypair,
@@ -340,8 +341,10 @@ addActionHandler('telebridgeStartKeyExchange', (global, actions, payload): Actio
     pendingKx.setPendingKeyExchangeMessage(chatId, kxMessage);
   } catch (error) {
     // Key exchange failed — transition to 'failed' state
-    // eslint-disable-next-line no-console
-    console.error('[TeleBridge] Key exchange failed:', error);
+    if (DEBUG) {
+      // eslint-disable-next-line no-console
+      console.error('[TeleBridge] Key exchange failed:', error);
+    }
     global = getGlobal();
     global = setChatKeyExchangeState(global, chatId, 'failed');
     setGlobal(global);
@@ -450,8 +453,10 @@ addActionHandler('telebridgeCompleteKeyExchange', (global, actions, payload): Ac
     }));
   } catch (error) {
     // Key exchange completion failed
-    // eslint-disable-next-line no-console
-    console.error('[TeleBridge] Key exchange completion failed:', error);
+    if (DEBUG) {
+      // eslint-disable-next-line no-console
+      console.error('[TeleBridge] Key exchange completion failed:', error);
+    }
     global = setChatKeyExchangeState(global, chatId, 'failed');
   }
 

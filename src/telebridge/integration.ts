@@ -24,6 +24,7 @@ import { x25519 } from '@noble/curves/ed25519.js';
 import type { MediaType } from './crypto/media';
 import type { ProtocolMode } from './crypto/protocol';
 
+import { DEBUG } from '../config';
 import {
   deriveChatKey,
   ROTATION_KEY_INFO,
@@ -209,9 +210,10 @@ export async function processOutgoingMessage(
     // VAL-ERR-002: If encryption fails, plaintext is NOT sent unencrypted.
     // Message stays in input field for retry. Error shown.
     // We throw the error rather than returning the plaintext.
-
-    // eslint-disable-next-line no-console
-    console.error('[TeleBridge] Encryption failed:', error);
+    if (DEBUG) {
+      // eslint-disable-next-line no-console
+      console.error('[TeleBridge] Encryption failed:', error);
+    }
     throw error;
   }
 }
@@ -457,8 +459,10 @@ export async function processIncomingMessage(
     };
   } catch (error) {
     // Decryption failed — show a user-facing error indicator
-    // eslint-disable-next-line no-console
-    console.error('[TeleBridge] Decryption failed:', error);
+    if (DEBUG) {
+      // eslint-disable-next-line no-console
+      console.error('[TeleBridge] Decryption failed:', error);
+    }
     return {
       isProtocol: true,
       shouldHide: false,
@@ -552,7 +556,7 @@ export function processKeyExchangeMessage(
   // If the payload is 64 bytes and starts with 0x02, it's an initial kx message
   // where the ephemeral public key just happens to start with byte 0x02.
   if (decoded.payload.length > 0 && decoded.payload[0] === ROTATION_KX_MARKER
-      && decoded.payload.length >= ROTATION_KX_MIN_PAYLOAD) {
+    && decoded.payload.length >= ROTATION_KX_MIN_PAYLOAD) {
     return processRotationKxMessage(decoded.payload, _chatId);
   }
 
@@ -739,7 +743,7 @@ export async function processRotationKxDecryption(
 
   // Must be a rotation kx message (starts with 0x02 marker AND has minimum rotation payload size)
   if (payload.length < 1 || payload[0] !== ROTATION_KX_MARKER
-      || payload.length < ROTATION_KX_MIN_PAYLOAD) {
+    || payload.length < ROTATION_KX_MIN_PAYLOAD) {
     return { success: false, newKey: undefined, newKeyId: undefined, error: 'Not a rotation kx message' };
   }
 
@@ -1216,8 +1220,10 @@ export async function processIncomingSecuredMessage(
       keyId: undefined,
     };
   } catch (error) {
-    // eslint-disable-next-line no-console
-    console.error('[TeleBridge] Secured message decryption failed:', error);
+    if (DEBUG) {
+      // eslint-disable-next-line no-console
+      console.error('[TeleBridge] Secured message decryption failed:', error);
+    }
     return {
       isProtocol: true,
       shouldHide: false,
@@ -1282,8 +1288,10 @@ export async function processIncomingSelfSecuredMessage(
       keyId: undefined,
     };
   } catch (error) {
-    // eslint-disable-next-line no-console
-    console.error('[TeleBridge] Self-copy decryption failed:', error);
+    if (DEBUG) {
+      // eslint-disable-next-line no-console
+      console.error('[TeleBridge] Self-copy decryption failed:', error);
+    }
     return {
       isProtocol: true,
       shouldHide: true,
@@ -1596,8 +1604,10 @@ export async function processIncomingGroupMessage(
       shouldHide: false,
     };
   } catch {
-    // eslint-disable-next-line no-console
-    console.error('[TeleBridge] Group message decryption failed');
+    if (DEBUG) {
+      // eslint-disable-next-line no-console
+      console.error('[TeleBridge] Group message decryption failed');
+    }
     return {
       isGroupMessage: true,
       decryptedText: undefined,
@@ -1647,8 +1657,10 @@ export async function processOutgoingGroupMessage(
       chainIndex: result.chainIndex,
     };
   } catch {
-    // eslint-disable-next-line no-console
-    console.error('[TeleBridge] Group message encryption failed');
+    if (DEBUG) {
+      // eslint-disable-next-line no-console
+      console.error('[TeleBridge] Group message encryption failed');
+    }
     throw new Error('Group message encryption failed');
   }
 }

@@ -19,6 +19,7 @@
 
 import type { IdentityKeypair } from './identity';
 
+import { DEBUG } from '../../config';
 import { deriveX25519FromEd25519 } from './identity';
 import {
   decryptKeyBlob,
@@ -608,8 +609,10 @@ export async function openBridgeDbResilient(): Promise<{
 
       request.onerror = () => {
         const err = new Error(`IndexedDB open failed: ${request.error?.message ?? 'unknown'}`);
-        // eslint-disable-next-line no-console
-        console.error('[TeleBridge] IndexedDB unavailable, using in-memory fallback:', err.message);
+        if (DEBUG) {
+          // eslint-disable-next-line no-console
+          console.error('[TeleBridge] IndexedDB unavailable, using in-memory fallback:', err.message);
+        }
         resolve({ db: undefined, error: err, isMemoryFallback: true });
       };
     });

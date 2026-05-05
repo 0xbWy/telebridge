@@ -43,6 +43,7 @@ import { ApiMediaFormat, MAIN_THREAD_ID } from '../../api/types';
 
 import {
   BASE_EMOJI_KEYWORD_LANG,
+  DEBUG,
   EDITABLE_INPUT_MODAL_ID,
   HEART_REACTION,
   MAX_UPLOAD_FILEPART_SIZE,
@@ -1223,8 +1224,10 @@ const Composer = ({
       }
     } catch (encError) {
       // V1 Bug #2 guard: If encryption fails, do NOT send plaintext attachments
-      // eslint-disable-next-line no-console
-      console.error('[TeleBridge] Media encryption failed, aborting send:', encError);
+      if (DEBUG) {
+        // eslint-disable-next-line no-console
+        console.error('[TeleBridge] Media encryption failed, aborting send:', encError);
+      }
       showNotification({
         localId: 'telebridgeEncryptFailed',
         message: lang('TeleBridgeEncryptFailed'),
@@ -1374,8 +1377,10 @@ const Composer = ({
           }
         } catch (encError) {
           // V1 Bug #2 guard: If encryption fails, do NOT send plaintext
-          // eslint-disable-next-line no-console
-          console.error('[TeleBridge] Encryption failed, aborting send:', encError);
+          if (DEBUG) {
+            // eslint-disable-next-line no-console
+            console.error('[TeleBridge] Encryption failed, aborting send:', encError);
+          }
           showNotification({
             localId: 'telebridgeEncryptFailed',
             message: lang('TeleBridgeEncryptFailed'),
@@ -2193,8 +2198,10 @@ const Composer = ({
         resetComposer();
       });
     } catch (error) {
-      // eslint-disable-next-line no-console
-      console.error('[TeleBridge] Secured send failed:', error);
+      if (DEBUG) {
+        // eslint-disable-next-line no-console
+        console.error('[TeleBridge] Secured send failed:', error);
+      }
       showNotification({
         localId: 'telebridgeSendSecuredFailed',
         message: lang('TeleBridgeSendSecuredFailed'),
