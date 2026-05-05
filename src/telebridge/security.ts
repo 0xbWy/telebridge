@@ -282,20 +282,14 @@ export function validateKeyExchangeMessage(
   }
 
   // Step 4: Check payload minimum size and type
-  // Rotation kx messages start with 0x02 marker byte
-  const isRotationKx = decoded.payload.length > 0 && decoded.payload[0] === 0x02;
+  // Rotation kx messages start with 0x02 marker byte AND have minimum rotation payload size.
+  // An initial kx payload is exactly 64 bytes — if it starts with 0x02 and is only 64 bytes,
+  // the first byte of the ephemeral key happens to be 0x02, not a rotation marker.
+  const ROTATION_KX_MIN_PAYLOAD = 97;
+  const isRotationKx = decoded.payload.length > 0 && decoded.payload[0] === 0x02
+    && decoded.payload.length >= ROTATION_KX_MIN_PAYLOAD;
 
   if (isRotationKx) {
-    // Rotation kx payload minimum: [0x02][keyId(4)][ephPub(32)][nonce(12)][ciphertext(32)][authTag(16)] = 97 bytes
-    const MIN_ROTATION_KX_PAYLOAD = 97;
-    if (decoded.payload.length < MIN_ROTATION_KX_PAYLOAD) {
-      return {
-        isValid: false,
-        isForged: true,
-        reason: `Rotation kx payload too small: ${decoded.payload.length} bytes (minimum: ${MIN_ROTATION_KX_PAYLOAD})`,
-      };
-    }
-
     // Check the ephemeral public key at offset 5 for all-zeros
     const ephPub = decoded.payload.slice(5, 37);
     let ephIsAllZeros = true;

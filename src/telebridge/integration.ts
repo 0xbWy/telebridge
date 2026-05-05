@@ -533,7 +533,12 @@ export function processKeyExchangeMessage(
   }
 
   // Check if this is a rotation kx message (starts with 0x02 marker)
-  if (decoded.payload.length > 0 && decoded.payload[0] === ROTATION_KX_MARKER) {
+  // A rotation kx payload is at least ROTATION_KX_MIN_PAYLOAD bytes (97+).
+  // An initial kx payload is exactly 64 bytes (ephemeralPub + x25519IdentityPub).
+  // If the payload is 64 bytes and starts with 0x02, it's an initial kx message
+  // where the ephemeral public key just happens to start with byte 0x02.
+  if (decoded.payload.length > 0 && decoded.payload[0] === ROTATION_KX_MARKER
+      && decoded.payload.length >= ROTATION_KX_MIN_PAYLOAD) {
     return processRotationKxMessage(decoded.payload, _chatId);
   }
 
@@ -718,18 +723,10 @@ export async function processRotationKxDecryption(
 
   const payload = decoded.payload;
 
-  // Must be a rotation kx message (starts with 0x02 marker)
-  if (payload.length < 1 || payload[0] !== ROTATION_KX_MARKER) {
+  // Must be a rotation kx message (starts with 0x02 marker AND has minimum rotation payload size)
+  if (payload.length < 1 || payload[0] !== ROTATION_KX_MARKER
+      || payload.length < ROTATION_KX_MIN_PAYLOAD) {
     return { success: false, newKey: undefined, newKeyId: undefined, error: 'Not a rotation kx message' };
-  }
-
-  if (payload.length < ROTATION_KX_MIN_PAYLOAD) {
-    return {
-      success: false,
-      newKey: undefined,
-      newKeyId: undefined,
-      error: `Rotation kx payload too short: ${payload.length} bytes`,
-    };
   }
 
   // Parse the payload
