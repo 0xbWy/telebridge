@@ -12,7 +12,7 @@ import type {
 } from '../../../telebridge/state';
 import type { ActionReturnType } from '../../types';
 
-import { DEBUG } from '../../../config';
+import { DEBUG, MIN_PASSWORD_LENGTH } from '../../../config';
 import {
   deriveX25519FromEd25519,
   generateIdentityKeypair,
@@ -61,7 +61,7 @@ import {
 
 addActionHandler('telebridgeSetPassword', async (global, actions, payload): Promise<void> => {
   const { password } = payload;
-  if (!password || password.length < 8) {
+  if (!password || password.length < MIN_PASSWORD_LENGTH) {
     global = setBridgeError(global, 'TeleBridgePasswordTooShort');
     setGlobal(global);
     return;

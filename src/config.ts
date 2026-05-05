@@ -75,7 +75,7 @@ export const UPLOAD_WORKERS = 16;
 
 const isBigScreen = typeof window !== 'undefined' && window.innerHeight >= 900;
 
-export const MIN_PASSWORD_LENGTH = 1;
+export const MIN_PASSWORD_LENGTH = 8;
 
 export const MESSAGE_LIST_SLICE = isBigScreen ? 60 : 40;
 export const MESSAGE_LIST_VIEWPORT_LIMIT = MESSAGE_LIST_SLICE * 2;

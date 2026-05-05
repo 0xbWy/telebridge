@@ -1,6 +1,7 @@
 import { memo, useState } from '../../lib/teact/teact';
 import { getActions } from '../../global';
 
+import { MIN_PASSWORD_LENGTH } from '../../config';
 import buildClassName from '../../util/buildClassName';
 
 import useFlag from '../../hooks/useFlag';
@@ -15,8 +16,6 @@ interface OwnProps {
   isLoading?: boolean;
   onSubmit: (password: string) => void;
 }
-
-const MIN_PASSWORD_LENGTH = 8;
 
 const PasswordDialog = ({ mode, errorKey, isLoading, onSubmit }: OwnProps) => {
   const { telebridgeClearError } = getActions();

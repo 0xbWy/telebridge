@@ -236,6 +236,7 @@ export default function createConfig(
       // Updates each dev re-build to provide current git branch or commit hash
       new DefinePlugin({
         APP_VERSION: JSON.stringify(appVersion),
+        DEBUG: JSON.stringify(APP_ENV !== 'production'),
         APP_REVISION: DefinePlugin.runtimeValue(() => {
           const { branch, commit } = getGitMetadata();
           const shouldDisplayOnlyCommit = APP_ENV === 'staging' || !branch || branch === 'HEAD';
@@ -280,7 +281,7 @@ export default function createConfig(
       }),
     ],
 
-    devtool: 'source-map',
+    devtool: mode === 'production' ? false : 'source-map',
 
     optimization: {
       splitChunks: {
