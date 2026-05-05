@@ -408,21 +408,14 @@ export async function processIncomingMessage(
     // VAL-SEC-001: Replay detection for symmetric messages
     // Uses unique messageId built from keyId + counter + nonce to prevent
     // all messages under the same chat key from being flagged as replays.
-    if (result.mode === 's' && result.keyId) {
-      // Build unique messageId from keyId, counter, and nonce
-      // This ensures each distinct encrypted message has a unique ID
-      let messageId: string;
-      if (decoded?.mode === 's' && decoded.payload.length >= 20) {
-        // Extract counter (bytes 4-8) and nonce (bytes 8-20) from payload
-        // Payload format: [keyId (4B)][counter (4B)][nonce (12B)][ciphertext][authTag (16B)]
-        const counter = (decoded.payload[4] << 24) | (decoded.payload[5] << 16)
-          | (decoded.payload[6] << 8) | decoded.payload[7];
-        const nonce = decoded.payload.slice(8, 20);
-        messageId = ReplayDetector.createMessageId(result.keyId, counter, nonce);
-      } else {
-        // Fallback: use only keyId (less precise but still provides basic protection)
-        messageId = result.keyId;
-      }
+    // CRITICAL: Always use createMessageId(keyId, counter, nonce) — never just keyId.
+    if (result.mode === 's' && result.keyId && decoded?.mode === 's' && decoded.payload.length >= 20) {
+      // Extract counter (bytes 4-8) and nonce (bytes 8-20) from payload
+      // Payload format: [keyId (4B)][counter (4B)][nonce (12B)][ciphertext][authTag (16B)]
+      const counter = (decoded.payload[4] << 24) | (decoded.payload[5] << 16)
+        | (decoded.payload[6] << 8) | decoded.payload[7];
+      const nonce = decoded.payload.slice(8, 20);
+      const messageId = ReplayDetector.createMessageId(result.keyId, counter, nonce);
 
       if (replayDetector.isReplay(chatId, messageId)) {
         // Replayed message — return error indicator instead of plaintext
@@ -1131,8 +1124,8 @@ export async function processIncomingSecuredMessage(
   _chatId: string,
   senderEd25519Pub?: Uint8Array,
 ): Promise<InboundMessageResult> {
-  const identity = getUnlockedIdentity();
-  if (!identity) {
+  const decoded = decodeProtocol(protocolString);
+  if (!decoded || decoded.mode !== 'a') {
     return {
       isProtocol: true,
       shouldHide: false,
@@ -1143,8 +1136,38 @@ export async function processIncomingSecuredMessage(
     };
   }
 
-  const decoded = decodeProtocol(protocolString);
-  if (!decoded || decoded.mode !== 'a') {
+  // VAL-SEC-001: Replay detection for secured messages
+  // Uses unique messageId built from ephPub prefix + nonce to prevent replays.
+  // Each secured message has a unique ephemeral keypair, so ephPub+nonce is unique.
+  // Payload format: [ephPub(32B)][nonce(12B)][ciphertext(var)][authTag(16B)][signature(64B)]
+  // Check replay BEFORE decryption — same message sent twice should be rejected even if
+  // we can't decrypt (bridge locked, etc.)
+  const MIN_SECURED_PAYLOAD_FOR_REPLAY = 32 + 12; // ephPub + nonce
+  if (decoded.payload.length >= MIN_SECURED_PAYLOAD_FOR_REPLAY) {
+    const ephPub = decoded.payload.slice(0, 32);
+    const nonce = decoded.payload.slice(32, 44);
+    // Use first 4 bytes of ephPub as keyId-like identifier (same pattern as symmetric)
+    const ephKeyId = Array.from(ephPub.slice(0, 4))
+      .map((b) => b.toString(16).padStart(2, '0'))
+      .join('');
+    const messageId = ReplayDetector.createMessageId(ephKeyId, 0, nonce);
+
+    if (replayDetector.isReplay(_chatId, messageId)) {
+      // Replayed secured message — reject
+      return {
+        isProtocol: true,
+        shouldHide: false,
+        decryptedText: undefined,
+        mode: 'a',
+        isSecured: true,
+        keyId: undefined,
+      };
+    }
+    replayDetector.markProcessed(_chatId, messageId);
+  }
+
+  const identity = getUnlockedIdentity();
+  if (!identity) {
     return {
       isProtocol: true,
       shouldHide: false,
@@ -1468,6 +1491,66 @@ export async function processIncomingGroupMessage(
       isSignatureValid: false,
       shouldHide: false,
     };
+  }
+
+  // VAL-SEC-001: Replay detection for group messages
+  // Uses unique messageId built from keyId + chainIndex + nonce to prevent replays.
+  // Group payload format: [keyIdLen(2B)][keyId(var)][groupIdLen(2B)][groupId(var)]
+  //   [memberIdLen(2B)][memberId(var)][chainIndex(4B)][nonce(12B)][ciphertext...][authTag(16B)][signature(64B)]
+  const groupDecoded = decodeProtocol(text);
+  if (groupDecoded?.mode === 'g' && groupDecoded.payload.length >= 8) {
+    // Parse variable-length fields to extract keyId, chainIndex, and nonce
+    const payload = groupDecoded.payload;
+    let offset = 0;
+
+    // keyIdLen(2B) + keyId(var)
+    if (offset + 2 > payload.length) {
+      // Malformed payload — skip replay detection, continue to decryption which will fail
+    } else {
+      const keyIdLen = (payload[offset] << 8) | payload[offset + 1];
+      offset += 2;
+      if (offset + keyIdLen <= payload.length) {
+        const groupKeyId = new TextDecoder().decode(payload.slice(offset, offset + keyIdLen));
+        offset += keyIdLen;
+
+        // groupIdLen(2B) + groupId(var)
+        if (offset + 2 <= payload.length) {
+          const gLen = (payload[offset] << 8) | payload[offset + 1];
+          offset += 2;
+          offset += gLen; // skip groupId value
+
+          // memberIdLen(2B) + memberId(var)
+          if (offset + 2 <= payload.length) {
+            const mLen = (payload[offset] << 8) | payload[offset + 1];
+            offset += 2;
+            offset += mLen; // skip memberId value
+
+            // chainIndex(4B) + nonce(12B)
+            if (offset + 4 + 12 <= payload.length) {
+              const chainIndex = (payload[offset] << 24) | (payload[offset + 1] << 16)
+                | (payload[offset + 2] << 8) | payload[offset + 3];
+              offset += 4;
+              const nonce = payload.slice(offset, offset + 12);
+
+              const messageId = ReplayDetector.createMessageId(groupKeyId, chainIndex, nonce);
+
+              if (replayDetector.isReplay(groupId, messageId)) {
+                // Replayed group message — reject
+                return {
+                  isGroupMessage: true,
+                  decryptedText: undefined,
+                  senderId,
+                  groupId,
+                  isSignatureValid: false,
+                  shouldHide: false,
+                };
+              }
+              replayDetector.markProcessed(groupId, messageId);
+            }
+          }
+        }
+      }
+    }
   }
 
   // Get the distributed sender key for this sender in this group
