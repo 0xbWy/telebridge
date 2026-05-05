@@ -137,7 +137,7 @@ import { parseTranslationCacheKey } from '../../../util/keys/translationKey';
 import { getServerTime } from '../../../util/serverTime';
 import stopEvent from '../../../util/stopEvent';
 import { isElementInViewport } from '../../../util/visibility/isElementInViewport';
-import { shouldHideTeleBridgeMessage } from '../../../telebridge/hooks';
+import { isEncryptToSelfDuplicate, shouldHideTeleBridgeMessage } from '../../../telebridge/hooks';
 import { calculateDimensionsForMessageMedia, getStickerDimensions, REM } from '../../common/helpers/mediaDimensions';
 import renderText from '../../common/helpers/renderText';
 import { getCustomEmojiSize } from '../composer/helpers/customEmoji';
@@ -775,9 +775,13 @@ const Message = ({
   const hasText = hasTextContent || hasFactCheck;
 
   // TeleBridge: Check if this is a protocol control message (kx/pk/sk) that should be hidden
+  // Also check for encrypt-to-self duplicates (self-copies of secured messages)
   const messageTextPlain = textMessage && getMessageContent(textMessage).text?.text;
   const isTeleBridgeProtocolMessage = messageTextPlain
     ? shouldHideTeleBridgeMessage(messageTextPlain)
+    || (ourUserId && message.senderId
+      ? isEncryptToSelfDuplicate(messageTextPlain, message.senderId, ourUserId)
+      : false)
     : false;
 
   const containerClassName = buildClassName(

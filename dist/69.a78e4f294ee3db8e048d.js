@@ -1,0 +1,2 @@
+(self.webpackChunktelebridge=self.webpackChunktelebridge||[]).push([[69],{67172(e){e.exports=function(e){return{name:"LDIF",contains:[{className:"attribute",match:"^dn(?=:)",relevance:10},{className:"attribute",match:"^\\w+(?=:)"},{className:"literal",match:"^-"},e.HASH_COMMENT_MODE]}}}}]);
+//# sourceMappingURL=69.a78e4f294ee3db8e048d.js.map

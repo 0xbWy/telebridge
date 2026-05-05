@@ -1,0 +1,2 @@
+(self.webpackChunktelebridge=self.webpackChunktelebridge||[]).push([[8233],{99040(e){e.exports=function(e){return{name:"Plain text",aliases:["text","txt"],disableAutodetect:!0}}}}]);
+//# sourceMappingURL=8233.56b32563fc6287c61d10.js.map

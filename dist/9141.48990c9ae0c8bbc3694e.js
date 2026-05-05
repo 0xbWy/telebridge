@@ -1,0 +1,2 @@
+(self.webpackChunktelebridge=self.webpackChunktelebridge||[]).push([[9141],{10164(e){e.exports=function(e){return{name:"VBScript in HTML",subLanguage:"xml",contains:[{begin:"<%",end:"%>",subLanguage:"vbscript"}]}}}}]);
+//# sourceMappingURL=9141.48990c9ae0c8bbc3694e.js.map

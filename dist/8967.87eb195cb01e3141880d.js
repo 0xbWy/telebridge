@@ -1,0 +1,2 @@
+"use strict";(self.webpackChunktelebridge=self.webpackChunktelebridge||[]).push([[8967],{11348(e,n,i){i.d(n,{open:()=>a});var t=i(55962);async function a(e,n){await(0,t.invoke)("plugin:shell|open",{path:e,with:n})}}}]);
+//# sourceMappingURL=8967.87eb195cb01e3141880d.js.map

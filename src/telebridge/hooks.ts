@@ -165,3 +165,9 @@ export function useTelebridgeDecryption(
 export function shouldHideTeleBridgeMessage(text: string): boolean {
   return shouldHideMessage(text);
 }
+
+/**
+ * Check if a message is an encrypt-to-self duplicate that should be filtered from the chat UI.
+ * Used by Message and MessageText components to hide self-copies of secured messages.
+ */
+export { isEncryptToSelfDuplicate };

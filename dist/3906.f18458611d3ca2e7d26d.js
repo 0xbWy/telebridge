@@ -1,0 +1,2 @@
+(self.webpackChunktelebridge=self.webpackChunktelebridge||[]).push([[3906],{19601(e){e.exports=function(e){return{name:"Clojure REPL",contains:[{className:"meta.prompt",begin:/^([\w.-]+|\s*#_)?=>/,starts:{end:/$/,subLanguage:"clojure"}}]}}}}]);
+//# sourceMappingURL=3906.f18458611d3ca2e7d26d.js.map

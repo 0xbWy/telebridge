@@ -104,6 +104,7 @@ function MessageText({
     decryptedText: telebridgeDecryptedText,
     isSecured: telebridgeIsSecured,
     decryptionErrorKey: telebridgeErrorKey,
+    shouldHide: telebridgeShouldHide,
   } = useTelebridgeDecryption(
     rawText,
     telebridgeChatId ?? '',
@@ -201,9 +202,10 @@ function MessageText({
     });
   });
 
-  // TeleBridge: protocol messages (kx/pk/sk) render as zero-height hidden elements
+  // TeleBridge: protocol messages (kx/pk/sk) and encrypt-to-self duplicates
+  // render as zero-height hidden elements
   // IMPORTANT: This return must come AFTER all hooks to avoid React rules-of-hooks violations
-  if (isProtocolHidden) {
+  if (isProtocolHidden || telebridgeShouldHide) {
     return <div className="telebridge-protocol-hidden" />;
   }
 

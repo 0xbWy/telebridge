@@ -1,0 +1,2 @@
+(self.webpackChunktelebridge=self.webpackChunktelebridge||[]).push([[7612],{20283(e){e.exports=function(e){return{aliases:["pycon"],contains:[{className:"meta.prompt",starts:{end:/ |$/,starts:{end:"$",subLanguage:"python"}},variants:[{begin:/^>>>(?=[ ]|$)/},{begin:/^\.\.\.(?=[ ]|$)/}]}]}}}}]);
+//# sourceMappingURL=7612.2c784508a5d409026358.js.map
