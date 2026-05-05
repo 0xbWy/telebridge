@@ -3107,6 +3107,7 @@
 "TeleBridgeLoginNeededUnlock" = "Unlock TeleBridge to manage encryption.";
 "TeleBridgeStartEncryptionMenu" = "Start Encryption";
 "TeleBridgeStartEncryptionMenuDescription" = "Begin encrypting messages in this chat.";
+"TeleBridgeForwardUnencryptedWarning" = "⚠️ This encrypted message will be forwarded to a chat without encryption. The recipient may not be able to read it.";
 
 "BoostingTeleBridgePremiumCountPlural" = "{count} TeleBridge Premium subscriptions";
 "BoostingTeleBridgePremiumFor" = "TeleBridge Premium for {value}";

@@ -2329,6 +2329,7 @@ export interface LangPair {
   'TeleBridgeLoginNeededUnlock': undefined;
   'TeleBridgeStartEncryptionMenu': undefined;
   'TeleBridgeStartEncryptionMenuDescription': undefined;
+  'TeleBridgeForwardUnencryptedWarning': undefined;
   'GiftTeleBridgePremiumOrStarsTitle': undefined;
   'TeleBridgePremiumUserStatusDialogSubtitle': undefined;
   'TeleBridgeStars': undefined;

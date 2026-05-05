@@ -699,11 +699,35 @@ addActionHandler('editMessage', (global, actions, payload): ActionReturnType => 
   actions.setEditingId({ messageId: undefined, tabId });
 
   (async () => {
+    // TeleBridge: If the original message was encrypted, re-encrypt the edited text
+    let finalText = text;
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const integ = require('../../../telebridge/integration') as typeof import('../../../telebridge/integration');
+      const originalText = message.content?.text?.text;
+      const wasOriginalEncrypted = originalText ? integ.isTeleBridgeMessage(originalText) : false;
+      if (wasOriginalEncrypted) {
+        const result = await integ.processEditedMessage(text, chatId, true);
+        if (result.wasEncrypted) {
+          finalText = result.text;
+        }
+      }
+    } catch (encError) {
+      // V1 Bug #2 guard: If encryption fails, do NOT send plaintext edit
+      // eslint-disable-next-line no-console
+      console.error('[TeleBridge] Edit encryption failed, aborting edit:', encError);
+      getActions().showNotification({
+        localId: 'telebridgeEditEncryptFailed',
+        message: 'TeleBridgeEncryptFailed',
+      });
+      return;
+    }
+
     await callApi('editMessage', {
       chat,
       message,
       attachment: attachments ? attachments[0] : undefined,
-      text,
+      text: finalText,
       entities,
       noWebPage: selectNoWebPage(global, chatId, threadId),
     }, progressCallback);
@@ -1634,6 +1658,31 @@ addActionHandler('forwardMessages', (global, actions, payload): ActionReturnType
   const { toChatId } = selectTabState(global, tabId).forwardMessages;
   const toChat = toChatId ? selectChat(global, toChatId) : undefined;
   if (!toChat) return;
+
+  // TeleBridge: Check if forwarding encrypted messages to an unencrypted chat
+  // Show warning notification if so, but still proceed with the forward
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const integ = require('../../../telebridge/integration') as typeof import('../../../telebridge/integration');
+    const { fromChatId, messageIds } = selectTabState(global, tabId).forwardMessages;
+    if (fromChatId && messageIds?.length) {
+      const hasEncryptedSource = messageIds
+        .map((id) => selectChatMessage(global, fromChatId, id))
+        .filter(Boolean)
+        .some((m) => m.content?.text?.text && integ.isTeleBridgeMessage(m.content.text.text));
+
+      if (hasEncryptedSource && !integ.hasChatKey(toChat.id)) {
+        // VAL-MSG-008: Show warning when forwarding encrypted message to unencrypted chat
+        getActions().showNotification({
+          localId: 'telebridgeForwardUnencrypted',
+          message: 'TeleBridgeForwardUnencryptedWarning',
+        });
+      }
+    }
+  } catch {
+    // TeleBridge integration not available — skip warning
+  }
+
   executeForwardMessages(global, { chat: toChat, isSilent, scheduledAt, scheduleRepeatPeriod }, tabId);
 });
 
@@ -1706,8 +1755,22 @@ async function executeForwardMessages(global: GlobalState, sendParams: SendMessa
   }
 
   for (const message of serviceMessages) {
-    const { text, entities } = message.content.text || {};
+    let { text, entities } = message.content.text || {};
     const { sticker } = message.content;
+
+    // TeleBridge: Re-encrypt forwarded message text for encrypted destination
+    if (text && fromChatId && toChatId) {
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        const integ = require('../../../telebridge/integration') as typeof import('../../../telebridge/integration');
+        const result = await integ.processForwardedMessage(text, fromChatId, toChatId);
+        if (result.wasEncrypted) {
+          text = result.text;
+        }
+      } catch {
+        // TeleBridge integration not available — forward as-is
+      }
+    }
 
     const replyInfo = selectMessageReplyInfo(global, toChat.id, toThreadId);
 
@@ -2709,7 +2772,7 @@ interface ForwardToChatOptions {
   isCurrentUserPremium: boolean;
 }
 
-function forwardMessagesToChat({
+async function forwardMessagesToChat({
   global,
   fromChat,
   toChat,
@@ -2722,6 +2785,25 @@ function forwardMessagesToChat({
   noCaptions,
   isCurrentUserPremium,
 }: ForwardToChatOptions) {
+  // TeleBridge: Check if forwarding encrypted messages to an unencrypted chat
+  // Show warning notification if so, but still proceed with the forward
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const integ = require('../../../telebridge/integration') as typeof import('../../../telebridge/integration');
+    const hasEncryptedSource = [...realMessages, ...serviceMessages]
+      .some((m) => m.content?.text?.text && integ.isTeleBridgeMessage(m.content.text.text));
+
+    if (hasEncryptedSource && !integ.hasChatKey(toChat.id)) {
+      // VAL-MSG-008: Show warning when forwarding encrypted message to unencrypted chat
+      getActions().showNotification({
+        localId: 'telebridgeForwardUnencrypted',
+        message: 'TeleBridgeForwardUnencryptedWarning',
+      });
+    }
+  } catch {
+    // TeleBridge integration not available — skip warning
+  }
+
   const sendAs = selectSendAs(global, toChat.id);
   const threadInfo = toThreadId !== MAIN_THREAD_ID ? selectThreadInfo(global, toChat.id, toThreadId) : undefined;
   const lastMessageId = toThreadId === MAIN_THREAD_ID
@@ -2772,8 +2854,22 @@ function forwardMessagesToChat({
   }
 
   for (const message of serviceMessages) {
-    const { text, entities } = message.content.text || {};
+    let { text, entities } = message.content.text || {};
     const { sticker } = message.content;
+
+    // TeleBridge: Re-encrypt forwarded message text for encrypted destination
+    if (text && fromChat.id && toChat.id) {
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        const integ = require('../../../telebridge/integration') as typeof import('../../../telebridge/integration');
+        const result = await integ.processForwardedMessage(text, fromChat.id, toChat.id);
+        if (result.wasEncrypted) {
+          text = result.text;
+        }
+      } catch {
+        // TeleBridge integration not available — forward as-is
+      }
+    }
 
     sendMessage(global, {
       chat: toChat,
