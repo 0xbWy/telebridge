@@ -314,7 +314,7 @@ const MiddleHeader: FC<OwnProps & StateProps> = ({
             />
           )}
         </div>
-        {isUserId(displayChatId) && (
+        {!isSavedDialog && (
           <TelebridgeLock chatId={displayChatId} />
         )}
       </>

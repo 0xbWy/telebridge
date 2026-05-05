@@ -84,8 +84,10 @@ import Composer from '../common/Composer';
 import PrivacySettingsNoticeModal from '../common/PrivacySettingsNoticeModal.async';
 import SeenByModal from '../common/SeenByModal.async';
 import UnpinAllMessagesModal from '../common/UnpinAllMessagesModal.async';
+import GroupKeyChangeWarning from '../telebridge/GroupKeyChangeWarning';
 import KeyChangeWarning from '../telebridge/KeyChangeWarning';
 import KeyExchangeStatus from '../telebridge/KeyExchangeStatus';
+import ReducedSecurityWarning from '../telebridge/ReducedSecurityWarning';
 import TelebridgeBanner from '../telebridge/TelebridgeBanner';
 import TofuBanner from '../telebridge/TofuBanner';
 import Button from '../ui/Button';
@@ -562,6 +564,12 @@ function MiddleColumn({
                 <KeyExchangeStatus chatId={renderingChatId!} />
                 <KeyChangeWarning chatId={renderingChatId!} />
                 <TofuBanner chatId={renderingChatId!} />
+              </>
+            )}
+            {!isUserId(renderingChatId!) && !isSavedDialog && (
+              <>
+                <GroupKeyChangeWarning chatId={renderingChatId!} />
+                <ReducedSecurityWarning chatId={renderingChatId!} />
               </>
             )}
             <Transition
