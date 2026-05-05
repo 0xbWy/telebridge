@@ -393,6 +393,20 @@ export async function processIncomingMessage(
       return securedResult;
     }
 
+    // Handle group (tb1.g.) messages by delegating to processIncomingGroupMessage
+    // Group messages are encrypted with Sender Key, not symmetric key
+    if (decoded?.mode === 'g') {
+      const groupResult = await processIncomingGroupMessage(text, chatId, senderId ?? '');
+      return {
+        isProtocol: true,
+        shouldHide: groupResult.shouldHide,
+        decryptedText: groupResult.decryptedText,
+        mode: 'g' as ProtocolMode,
+        isSecured: false,
+        keyId: undefined,
+      };
+    }
+
     const result = await decryptProtocolMessage(text, chatId);
     if (!result) {
       // Decryption returned undefined — may not have the key

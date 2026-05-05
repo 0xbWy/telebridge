@@ -109,7 +109,9 @@ import { selectCurrentLimit } from '../../global/selectors/limits';
 import { selectSharedSettings } from '../../global/selectors/sharedState';
 import {
   selectChatEncryptionStatus,
+  selectGroupEncryptionStatus,
   selectIsChatEncryptionPaused,
+  selectIsGroupChat,
   selectIsKeyExchangeInProgress,
 } from '../../global/selectors/telebridge';
 import {
@@ -331,6 +333,8 @@ type StateProps = {
   shouldOpenMessageMediaEditor?: TabState['shouldOpenMessageMediaEditor'];
   isKeyExchangeInProgress?: boolean;
   chatEncryptionStatus?: string;
+  isGroupChat?: boolean;
+  groupEncryptionStatus?: string;
   isPaused?: boolean;
 };
 
@@ -462,6 +466,8 @@ const Composer = ({
   shouldOpenMessageMediaEditor,
   isKeyExchangeInProgress,
   chatEncryptionStatus,
+  isGroupChat,
+  groupEncryptionStatus,
   isPaused,
   onDropHide,
   onFocus,
@@ -1344,11 +1350,23 @@ const Composer = ({
 
         // Prepare text for sending — may encrypt with TeleBridge if chat key exists
         // When encryption is paused (isPaused), skip encryption and send plaintext
+        // For group chats with encryption, use processOutgoingGroupMessage (Sender Key)
+        // For 1:1 chats with encryption, use processOutgoingMessage (symmetric)
         let finalText = text;
         try {
           // eslint-disable-next-line @typescript-eslint/no-require-imports
           const integ = require('../../telebridge/integration') as typeof import('../../telebridge/integration');
-          if (integ.hasChatKey(chatId) && !isPaused) {
+          const isGroupEncrypted = isGroupChat && groupEncryptionStatus === 'locked';
+          if (isGroupEncrypted && !isPaused) {
+            // Group encryption: use Sender Key protocol
+            if (currentUserId) {
+              const groupResult = await integ.processOutgoingGroupMessage(text, chatId, currentUserId);
+              if (groupResult.wasEncrypted) {
+                finalText = groupResult.text;
+              }
+            }
+          } else if (integ.hasChatKey(chatId) && !isPaused) {
+            // 1:1 symmetric encryption
             const result = await integ.processOutgoingMessage(text, chatId);
             if (result.wasEncrypted) {
               finalText = result.text;
@@ -3030,6 +3048,8 @@ export default memo(withGlobal<OwnProps>(
       replyToMessage,
       isKeyExchangeInProgress: isUserId(chatId) ? selectIsKeyExchangeInProgress(global, chatId) : undefined,
       chatEncryptionStatus: isUserId(chatId) ? selectChatEncryptionStatus(global, chatId) : undefined,
+      isGroupChat: selectIsGroupChat(global, chatId),
+      groupEncryptionStatus: selectGroupEncryptionStatus(global, chatId) ?? undefined,
       isPaused: selectIsChatEncryptionPaused(global, chatId),
     };
   },
