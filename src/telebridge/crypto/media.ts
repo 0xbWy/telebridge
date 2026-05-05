@@ -65,12 +65,12 @@ export type MediaType =
   | 'videoMessage'
   | 'document'
   | 'audio'
-  | 'sticker'
   | 'animation';
 
 /**
- * Set of all supported media types for fast lookup.
- * Every media type MUST go through encryption — no exceptions.
+ * All media types that are encrypted in transit.
+ * Stickers are public assets and are NOT encrypted (by design).
+ * Every media type in this set MUST go through encryption — no exceptions.
  */
 export const ALL_MEDIA_TYPES: ReadonlySet<string> = new Set([
   'photo',
@@ -79,9 +79,27 @@ export const ALL_MEDIA_TYPES: ReadonlySet<string> = new Set([
   'videoMessage',
   'document',
   'audio',
-  'sticker',
   'animation',
 ]);
+
+/**
+ * Media types that are excluded from encryption.
+ * Stickers are public assets and should never be encrypted.
+ */
+export const EXCLUDED_MEDIA_TYPES: ReadonlySet<string> = new Set([
+  'sticker',
+]);
+
+/**
+ * Check if a media type should be encrypted.
+ * Returns true for all types in ALL_MEDIA_TYPES, false for excluded types like 'sticker'.
+ *
+ * @param mediaType - The media type to check
+ * @returns true if the media type should be encrypted
+ */
+export function shouldEncryptMediaType(mediaType: string): boolean {
+  return ALL_MEDIA_TYPES.has(mediaType) && !EXCLUDED_MEDIA_TYPES.has(mediaType);
+}
 
 // ---------- Chunk Encryption ----------
 

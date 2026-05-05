@@ -234,8 +234,8 @@ describe('VAL-MSG-011: Voice messages encrypted', () => {
     const chatKey = setupChatKey(chatId);
     const testData = createRandomData(1024);
 
-    // V1 Bug #10 guard: ALL media types must be encrypted unconditionally
-    const types: MediaType[] = ['photo', 'video', 'voice', 'videoMessage', 'document', 'audio', 'sticker', 'animation'];
+    // V1 Bug #10 guard: ALL media types must be encrypted unconditionally (except stickers)
+    const types: MediaType[] = ['photo', 'video', 'voice', 'videoMessage', 'document', 'audio', 'animation'];
 
     for (const mediaType of types) {
       const encrypted = await encryptMedia(testData, chatKey.key, chatId, `media-test-${mediaType}`, mediaType);

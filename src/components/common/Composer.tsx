@@ -1179,7 +1179,7 @@ const Composer = ({
     return true;
   };
 
-  const sendAttachments = useLastCallback(({
+  const sendAttachments = useLastCallback(async ({
     attachments: attachmentsToSend,
     sendCompressed = attachmentSettings.shouldCompress,
     sendGrouped = attachmentSettings.shouldSendGrouped,
@@ -1205,12 +1205,33 @@ const Composer = ({
 
     isInvertedMedia = text && sendCompressed && sendGrouped ? isInvertedMedia : undefined;
 
+    // Encrypt attachments with TeleBridge if chat key exists and encryption is not paused
+    let encryptedAttachments = prepareAttachmentsToSend(attachmentsToSend, sendCompressed);
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const mediaPipe = require('../../telebridge/mediaPipeline') as typeof import('../../telebridge/mediaPipeline');
+      if (mediaPipe.shouldEncryptAttachmentsForChat(chatId, isPaused ?? false)) {
+        encryptedAttachments = await mediaPipe.encryptAttachments(
+          encryptedAttachments, chatId,
+        );
+      }
+    } catch (encError) {
+      // V1 Bug #2 guard: If encryption fails, do NOT send plaintext attachments
+      // eslint-disable-next-line no-console
+      console.error('[TeleBridge] Media encryption failed, aborting send:', encError);
+      showNotification({
+        localId: 'telebridgeEncryptFailed',
+        message: lang('TeleBridgeEncryptFailed'),
+      });
+      return;
+    }
+
     if (editingMessage) {
       editMessage({
         messageList: currentMessageList,
         text,
         entities,
-        attachments: prepareAttachmentsToSend(attachmentsToSend, sendCompressed),
+        attachments: encryptedAttachments,
       });
     } else {
       sendMessage({
@@ -1221,7 +1242,7 @@ const Composer = ({
         scheduleRepeatPeriod,
         isSilent,
         shouldUpdateStickerSetOrder,
-        attachments: prepareAttachmentsToSend(attachmentsToSend, sendCompressed),
+        attachments: encryptedAttachments,
         shouldGroupMessages: sendGrouped,
         isInvertedMedia,
       });

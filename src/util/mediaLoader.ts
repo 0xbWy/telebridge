@@ -268,3 +268,77 @@ function getRetryTimeout(retryNumber: number) {
   // 250ms, 500ms, 1s, 2s, 4s
   return 250 * 2 ** retryNumber;
 }
+
+// ---------- TeleBridge Media Decryption ----------
+
+/**
+ * Fetch media and decrypt it if the chat has TeleBridge encryption.
+ *
+ * This wraps the standard fetch function with a decryption step.
+ * After downloading, if the chat has a key and the data looks like
+ * encrypted TeleBridge media (starts with 0x01 or 0x02 version byte),
+ * it decrypts the data before returning it.
+ *
+ * V1 Bug #4 guard: Uses explicit chatId, NOT selectCurrentChat().
+ *
+ * @param url - Media URL to fetch
+ * @param mediaFormat - Media format (BlobUrl, Text, etc.)
+ * @param chatId - Explicit chat ID for key lookup
+ * @param mediaId - Unique media file identifier for key derivation
+ * @param isHtmlAllowed - Whether HTML is allowed
+ * @param onProgress - Progress callback
+ * @param callbackUniqueId - Unique callback ID
+ * @returns Decrypted media URL, or original URL if not encrypted
+ */
+export async function fetchAndDecrypt(
+  url: string,
+  mediaFormat: ApiMediaFormat.BlobUrl,
+  chatId: string,
+  mediaId: string,
+  isHtmlAllowed = false,
+  onProgress?: ApiOnProgress,
+  callbackUniqueId?: string,
+): Promise<ApiPreparedMedia> {
+  // First, fetch the media normally
+  const result = await fetch(url, mediaFormat, isHtmlAllowed, onProgress, callbackUniqueId);
+
+  if (!result) {
+    return result;
+  }
+
+  // Try TeleBridge decryption if the chat has a key
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const mediaPipe = require('../telebridge/mediaPipeline') as typeof import('../telebridge/mediaPipeline');
+
+  if (!mediaPipe.shouldDecryptForChat(chatId)) {
+    return result;
+  }
+
+  try {
+    // The result is a blob URL — fetch the blob data to inspect
+    // Use globalThis.fetch to avoid conflict with the local fetch() export
+    const response = await globalThis.fetch(result);
+    const blob = await response.blob();
+    const arrayBuffer = await blob.arrayBuffer();
+    const data = new Uint8Array(arrayBuffer);
+
+    // Check if the data looks like encrypted TeleBridge media
+    // Version byte 0x01 = single-piece, 0x02 = chunked
+    if (data.length > 0 && (data[0] === 0x01 || data[0] === 0x02)) {
+      const decryptedBlob = await mediaPipe.decryptDownloadedMedia(
+        blob, chatId, mediaId,
+      );
+
+      if (decryptedBlob instanceof Blob) {
+        // Create a new blob URL for the decrypted data
+        URL.revokeObjectURL(result);
+        return URL.createObjectURL(decryptedBlob);
+      }
+    }
+  } catch {
+    // Decryption failed — return original result
+    // This can happen if the data is not actually TeleBridge encrypted
+  }
+
+  return result;
+}

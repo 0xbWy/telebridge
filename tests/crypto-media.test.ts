@@ -33,7 +33,7 @@ function createRandomData(size: number): Uint8Array {
 // ---------- VAL-CRYPTO-028: All media types encrypted without exception ----------
 
 describe('VAL-CRYPTO-028: All media types encrypted unconditionally', () => {
-  const mediaTypes: MediaType[] = ['photo', 'video', 'voice', 'videoMessage', 'document', 'audio', 'sticker', 'animation'];
+  const mediaTypes: MediaType[] = ['photo', 'video', 'voice', 'videoMessage', 'document', 'audio', 'animation'];
   const chatKey = new Uint8Array(32);
   crypto.getRandomValues(chatKey);
 
@@ -48,15 +48,23 @@ describe('VAL-CRYPTO-028: All media types encrypted unconditionally', () => {
     }
   });
 
-  test('ALL_MEDIA_TYPES set contains all expected types', () => {
+  test('ALL_MEDIA_TYPES set contains all expected types (except sticker)', () => {
     expect(ALL_MEDIA_TYPES.has('photo')).toBe(true);
     expect(ALL_MEDIA_TYPES.has('video')).toBe(true);
     expect(ALL_MEDIA_TYPES.has('voice')).toBe(true);
     expect(ALL_MEDIA_TYPES.has('videoMessage')).toBe(true);
     expect(ALL_MEDIA_TYPES.has('document')).toBe(true);
     expect(ALL_MEDIA_TYPES.has('audio')).toBe(true);
-    expect(ALL_MEDIA_TYPES.has('sticker')).toBe(true);
+    expect(ALL_MEDIA_TYPES.has('sticker')).toBe(false); // Stickers excluded by design
     expect(ALL_MEDIA_TYPES.has('animation')).toBe(true);
+  });
+
+  test('sticker type is excluded from ALL_MEDIA_TYPES and in EXCLUDED_MEDIA_TYPES', async () => {
+    const { EXCLUDED_MEDIA_TYPES, shouldEncryptMediaType } = await import('../src/telebridge/crypto/media');
+    expect(EXCLUDED_MEDIA_TYPES.has('sticker')).toBe(true);
+    expect(shouldEncryptMediaType('sticker')).toBe(false);
+    expect(shouldEncryptMediaType('photo')).toBe(true);
+    expect(shouldEncryptMediaType('video')).toBe(true);
   });
 
   test('encryption produces different ciphertext each time (random nonce)', async () => {

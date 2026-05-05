@@ -39,6 +39,51 @@ const DownloadManager = ({
     });
   });
 
+  /**
+   * Decrypt downloaded media if the chat has TeleBridge encryption.
+   *
+   * V1 Bug #4 guard: Uses explicit originChatId from download metadata,
+   * NOT selectCurrentChat().
+   */
+  const decryptMediaIfNeeded = useLastCallback(async (
+    result: string, mediaHash: string, metadata: { originChatId?: string; filename: string },
+  ): Promise<string> => {
+    const { originChatId } = metadata;
+    if (!originChatId) {
+      return result;
+    }
+
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const mediaPipe = require('../../telebridge/mediaPipeline') as typeof import('../../telebridge/mediaPipeline');
+
+      if (!mediaPipe.shouldDecryptForChat(originChatId)) {
+        return result;
+      }
+
+      // Fetch the blob data from the blob URL
+      const response = await fetch(result);
+      const blob = await response.blob();
+      const arrayBuffer = await blob.arrayBuffer();
+      const data = new Uint8Array(arrayBuffer);
+
+      // Check if the data looks like encrypted TeleBridge media (version byte 0x01 or 0x02)
+      if (data.length > 0 && (data[0] === 0x01 || data[0] === 0x02)) {
+        const mediaId = mediaPipe.getMediaIdFromHash(mediaHash);
+        const decryptedBlob = await mediaPipe.decryptDownloadedMedia(blob, originChatId, mediaId);
+
+        if (decryptedBlob instanceof Blob && decryptedBlob !== blob) {
+          URL.revokeObjectURL(result);
+          return URL.createObjectURL(decryptedBlob);
+        }
+      }
+    } catch {
+      // Decryption failed — return original result
+    }
+
+    return result;
+  });
+
   useEffect(() => {
     if (!Object.keys(activeDownloads).length) {
       processedHashes.clear();
@@ -76,7 +121,7 @@ const DownloadManager = ({
         }
       };
 
-      mediaLoader.fetch(mediaHash, mediaFormat, true, handleProgress, generateUniqueId()).then((result) => {
+      mediaLoader.fetch(mediaHash, mediaFormat, true, handleProgress, generateUniqueId()).then(async (result) => {
         if (mediaFormat === ApiMediaFormat.DownloadUrl) {
           const url = new URL(result, window.document.baseURI);
           url.searchParams.set('filename', encodeURIComponent(filename));
@@ -88,7 +133,9 @@ const DownloadManager = ({
             });
           }, { once: true });
         } else if (result) {
-          download(result, filename);
+          // Try TeleBridge decryption if the chat has encryption
+          const decryptedResult = await decryptMediaIfNeeded(result, mediaHash, metadata);
+          download(decryptedResult, filename);
         }
 
         handleMediaDownloaded(mediaHash);

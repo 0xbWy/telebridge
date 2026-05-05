@@ -165,6 +165,8 @@ export {
   shouldChunk,
   calculateChunkCount,
   ALL_MEDIA_TYPES,
+  EXCLUDED_MEDIA_TYPES,
+  shouldEncryptMediaType,
   CHUNK_SIZE,
   MAX_SINGLE_PIECE_SIZE,
 } from './media';
