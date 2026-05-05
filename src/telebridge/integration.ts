@@ -26,6 +26,7 @@ import type { ProtocolMode } from './crypto/protocol';
 
 import {
   deriveChatKey,
+  ROTATION_KEY_INFO,
 } from './crypto/keyExchange';
 import {
   getUnlockedIdentity,
@@ -766,7 +767,8 @@ export async function processRotationKxDecryption(
     const ecdhSharedSecret = x25519.getSharedSecret(myX25519Scalar, ephemeralPub);
 
     // Derive the same rotation encryption key using HKDF-SHA256
-    const rotationEncKey = deriveChatKey(ecdhSharedSecret);
+    // with domain-separated info string (must match what sender used)
+    const rotationEncKey = deriveChatKey(ecdhSharedSecret, ROTATION_KEY_INFO);
 
     // Build AAD: rotation marker + key ID
     const aad = new Uint8Array(5);
@@ -974,7 +976,8 @@ async function buildRotationKxMessage(
   const ecdhSharedSecret = x25519.getSharedSecret(ephemeralKeypair.secretKey, recipientPubKey);
 
   // Derive an AES-256 encryption key from the ECDH shared secret using HKDF-SHA256
-  const rotationEncKey = deriveChatKey(ecdhSharedSecret);
+  // with domain-separated info string to prevent cross-use with initial key exchange
+  const rotationEncKey = deriveChatKey(ecdhSharedSecret, ROTATION_KEY_INFO);
 
   // Encrypt the new chat key with AES-256-GCM using the ECDH-derived key
   // AAD includes the rotation marker and key ID for authenticity

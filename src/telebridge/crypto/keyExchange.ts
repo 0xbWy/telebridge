@@ -24,7 +24,14 @@ const _SIGNATURE_LENGTH = 64;
 const CHAT_KEY_INFO = new TextEncoder().encode('TeleBridge-ChatKey-v1');
 
 /** HKDF info string for signed prekey sub-key derivation. */
-const _SIGNED_PREKEY_INFO = new TextEncoder().encode('TeleBridge-SignedPreKey-v1');
+const _SIGNED_PREKEY_INFO = new TextEncoder().encode('TeleBridge-SignedPrekey-v1');
+
+/**
+ * HKDF info string for key rotation derivation.
+ * Domain-separated from CHAT_KEY_INFO to ensure that
+ * rotation ECDH output cannot be used as a chat key and vice versa.
+ */
+export const ROTATION_KEY_INFO = new TextEncoder().encode('TeleBridge-Rotation-v1');
 
 // ---------- Low-order point protection ----------
 
